@@ -18,7 +18,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2d);
 
     commands.spawn((
-        Sprite::from_image(asset_server.load("imgs/rust.png")),
+        Sprite::from_image(asset_server.load("rust.png")),
         Transform::from_xyz(0., 0., 0.),
         Direction::Right,
     ));
