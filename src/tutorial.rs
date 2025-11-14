@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use crate::{
     GameState,
     simulation::{ControlSettings, ReactorState, TurbineState, EnvironmentState},
-    ui::{indicators::gauge_grid, sliders::slider_panel},
+    ui::indicators::gauge_grid,
 };
 
 pub struct TutorialPlugin;
@@ -39,9 +39,6 @@ struct UranekSprite;
 struct UranekTextBox;
 
 #[derive(Component)]
-struct HighlightBox;
-
-#[derive(Component)]
 struct UranekText;
 
 #[derive(Component)]
@@ -55,6 +52,18 @@ struct TutorialGaugeGridMarker;
 
 #[derive(Component)]
 struct DespawnOnExit(GameState);
+
+// New: highlight components for tutorial focus frames
+#[derive(Component)]
+struct TutorialHighlight {
+    kind: HighlightKind,
+}
+
+enum HighlightKind {
+    Gauge,
+    Reactivity,
+    Turbine,
+}
 
 fn setup_tutorial_scene(
     mut commands: Commands,
@@ -106,23 +115,201 @@ fn setup_tutorial_scene(
                     ..default()
                 })
                 .with_children(|game_ui| {
-                    // Gauges (left bottom)
-                    game_ui.spawn(gauge_grid(font.clone()));
+                    // Gauges (left bottom) with highlight
+                    game_ui
+                        .spawn((
+                            Node {
+                                position_type: PositionType::Relative,
+                                ..default()
+                            },
+                            TutorialGaugeGridMarker,
+                        ))
+                        .with_children(|gauge_container| {
+                            // Highlight behind gauges
+                            gauge_container.spawn((
+                                Node {
+                                    position_type: PositionType::Absolute,
+                                    left: Val::Px(-16.0),
+                                    right: Val::Px(-16.0),
+                                    top: Val::Px(-16.0),
+                                    bottom: Val::Px(-16.0),
+                                    border: UiRect::all(Val::Px(3.0)),
+                                    ..default()
+                                },
+                                BorderRadius::all(Val::Px(12.0)),
+                                BorderColor::all(Color::NONE),
+                                BackgroundColor(Color::srgba(1.0, 1.0, 0.3, 0.0)),
+                                TutorialHighlight { kind: HighlightKind::Gauge },
+                            ));
+
+                            // Actual gauge grid UI
+                            gauge_container.spawn(gauge_grid(font.clone()));
+                        });
 
                     // Sliders (right bottom)
-                    game_ui.spawn(Node {
-                        width: Val::Px(420.0),
-                        flex_direction: FlexDirection::Column,
-                        row_gap: Val::Px(40.0),
-                        ..default()
-                    })
-                    .with_children(|parent| {
-                        parent.spawn((
-                            slider_panel(0.0, 0.0, font.clone(), &asset_server),
-                            TutorialReactivitySliderMarker,
-                            TutorialTurbineSliderMarker,
-                        ));
-                    });
+                    game_ui
+                        .spawn(Node {
+                            width: Val::Px(420.0),
+                            flex_direction: FlexDirection::Column,
+                            row_gap: Val::Px(40.0),
+                            padding: UiRect::all(Val::Px(20.0)),
+                            ..default()
+                        })
+                        .with_children(|parent| {
+                            // Reactivity slider row with marker and highlight
+                            parent
+                                .spawn((
+                                    Node {
+                                        position_type: PositionType::Relative,
+                                        flex_direction: FlexDirection::Row,
+                                        column_gap: Val::Px(20.0),
+                                        align_items: AlignItems::Center,
+                                        ..default()
+                                    },
+                                    TutorialReactivitySliderMarker,
+                                ))
+                                .with_children(|row| {
+                                    // Highlight behind reactivity slider row
+                                    row.spawn((
+                                        Node {
+                                            position_type: PositionType::Absolute,
+                                            left: Val::Px(-16.0),
+                                            right: Val::Px(-16.0),
+                                            top: Val::Px(-16.0),
+                                            bottom: Val::Px(-16.0),
+                                            border: UiRect::all(Val::Px(3.0)),
+                                            ..default()
+                                        },
+                                        BorderRadius::all(Val::Px(12.0)),
+                                        BorderColor::all(Color::NONE),
+                                        BackgroundColor(Color::srgba(1.0, 1.0, 0.3, 0.0)),
+                                        TutorialHighlight { kind: HighlightKind::Reactivity },
+                                    ));
+
+                                    // Nuclear icon
+                                    row.spawn((
+                                        Node {
+                                            width: Val::Px(48.0),
+                                            height: Val::Px(48.0),
+                                            ..default()
+                                        },
+                                        ImageNode::new(asset_server.load("imgs/nuclear.png")),
+                                    ));
+                                    // Slider container
+                                    row.spawn(Node {
+                                        flex_direction: FlexDirection::Column,
+                                        row_gap: Val::Px(8.0),
+                                        width: Val::Px(300.0),
+                                        ..default()
+                                    })
+                                    .with_children(|slider_container| {
+                                        slider_container.spawn((
+                                            Text::new("Reaktywność"),
+                                            TextFont {
+                                                font: font.clone(),
+                                                font_size: 16.0,
+                                                ..default()
+                                            },
+                                            TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                                        ));
+                                        slider_container.spawn(crate::ui::sliders::create_reactivity_slider(0.0));
+                                    });
+                                    // Value display
+                                    row.spawn((
+                                        Text::new("0%"),
+                                        TextFont {
+                                            font: font.clone(),
+                                            font_size: 20.0,
+                                            ..default()
+                                        },
+                                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                                        crate::ui::sliders::ReactivityValueText,
+                                        Node {
+                                            width: Val::Px(60.0),
+                                            justify_content: JustifyContent::End,
+                                            ..default()
+                                        },
+                                    ));
+                                });
+
+                            // Turbine slider row with marker and highlight
+                            parent
+                                .spawn((
+                                    Node {
+                                        position_type: PositionType::Relative,
+                                        flex_direction: FlexDirection::Row,
+                                        column_gap: Val::Px(20.0),
+                                        align_items: AlignItems::Center,
+                                        ..default()
+                                    },
+                                    TutorialTurbineSliderMarker,
+                                ))
+                                .with_children(|row| {
+                                    // Highlight behind turbine slider row
+                                    row.spawn((
+                                        Node {
+                                            position_type: PositionType::Absolute,
+                                            left: Val::Px(-16.0),
+                                            right: Val::Px(-16.0),
+                                            top: Val::Px(-16.0),
+                                            bottom: Val::Px(-16.0),
+                                            border: UiRect::all(Val::Px(3.0)),
+                                            ..default()
+                                        },
+                                        BorderRadius::all(Val::Px(12.0)),
+                                        BorderColor::all(Color::NONE),
+                                        BackgroundColor(Color::srgba(1.0, 1.0, 0.3, 0.0)),
+                                        TutorialHighlight { kind: HighlightKind::Turbine },
+                                    ));
+
+                                    // Turbine icon
+                                    row.spawn((
+                                        Node {
+                                            width: Val::Px(48.0),
+                                            height: Val::Px(48.0),
+                                            ..default()
+                                        },
+                                        ImageNode::new(asset_server.load("imgs/turbine.png")),
+                                        Transform::default(),
+                                        crate::ui::sliders::TurbineIcon,
+                                    ));
+                                    // Slider container
+                                    row.spawn(Node {
+                                        flex_direction: FlexDirection::Column,
+                                        row_gap: Val::Px(8.0),
+                                        width: Val::Px(300.0),
+                                        ..default()
+                                    })
+                                    .with_children(|slider_container| {
+                                        slider_container.spawn((
+                                            Text::new("Prędkość Transferu"),
+                                            TextFont {
+                                                font: font.clone(),
+                                                font_size: 16.0,
+                                                ..default()
+                                            },
+                                            TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                                        ));
+                                        slider_container.spawn(crate::ui::sliders::create_turbine_slider(0.0));
+                                    });
+                                    // Value display
+                                    row.spawn((
+                                        Text::new("0%"),
+                                        TextFont {
+                                            font: font.clone(),
+                                            font_size: 20.0,
+                                            ..default()
+                                        },
+                                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                                        crate::ui::sliders::TurbineValueText,
+                                        Node {
+                                            width: Val::Px(60.0),
+                                            justify_content: JustifyContent::End,
+                                            ..default()
+                                        },
+                                    ));
+                                });
+                        });
                 });
 
             // RIGHT SIDE: UraneK + Speech Bubble (40%)
@@ -197,23 +384,7 @@ fn setup_tutorial_scene(
                 });
         });
 
-    // Highlight overlay (initially invisible)
-    commands.spawn((
-        Node {
-            position_type: PositionType::Absolute,
-            left: Val::Px(0.0),
-            top: Val::Px(0.0),
-            width: Val::Px(0.0),
-            height: Val::Px(0.0),
-            border: UiRect::all(Val::Px(4.0)),
-            ..default()
-        },
-        BorderRadius::all(Val::Px(12.0)),
-        BorderColor::all(Color::srgb(1.0, 1.0, 0.4)),
-        BackgroundColor(Color::srgba(1.0, 1.0, 0.4, 0.1)),
-        HighlightBox,
-        DespawnOnExit(GameState::Tutorial),
-    ));
+    // Remove old pointer arrow entity entirely (no longer needed)
 }
 
 fn teardown_tutorial_scene(
@@ -290,63 +461,30 @@ fn update_uranek_animation(
 }
 fn update_highlight_box(
     tutorial_state: Res<TutorialState>,
-    mut highlight_query: Query<(&mut Node, &mut BorderColor, &mut BackgroundColor), With<HighlightBox>>,
-    gauge_grid: Query<&GlobalTransform, With<TutorialGaugeGridMarker>>,
-    reactivity_slider: Query<&GlobalTransform, With<TutorialReactivitySliderMarker>>,
-    turbine_slider: Query<&GlobalTransform, With<TutorialTurbineSliderMarker>>,
+    time: Res<Time>,
+    mut highlight_q: Query<(&mut BackgroundColor, &mut BorderColor, &TutorialHighlight)>,
 ) {
-    if !tutorial_state.is_changed() {
-        return;
-    }
+    let t = (time.elapsed_secs() * 3.0).sin().abs();
+    let alpha = 0.20 + 0.10 * t;
+    let border_alpha = 0.80 + 0.20 * t;
 
-    let mut highlight_iter = highlight_query.iter_mut();
-    let Some((mut node, mut border_color, mut bg_color)) = highlight_iter.next() else {
-        return;
-    };
+    let step = tutorial_state.step_index;
 
-    // Default: hide highlight
-    node.width = Val::Px(0.0);
-    node.height = Val::Px(0.0);
-    border_color.set_all(Color::NONE);
-    bg_color.0 = Color::NONE;
-
-    // Show highlight based on step
-    let target_transform = match tutorial_state.step_index {
-        1 | 2 => {
-            let mut iter = gauge_grid.iter();
-            iter.next()
-        }
-        3 => {
-            let mut iter = gauge_grid.iter();
-            iter.next()
-        }
-        4 => {
-            let mut iter = reactivity_slider.iter();
-            iter.next()
-        }
-        5 => {
-            let mut iter = turbine_slider.iter();
-            iter.next()
-        }
-        _ => None,
-    };
-
-    if let Some(transform) = target_transform {
-        let translation = transform.translation();
-        
-        // Set highlight box based on target
-        let (width, height, offset_x, offset_y) = match tutorial_state.step_index {
-            1 | 2 | 3 => (280.0, 280.0, -10.0, -10.0), // Gauge grid
-            4 | 5 => (440.0, 100.0, -10.0, -10.0), // Sliders
-            _ => (0.0, 0.0, 0.0, 0.0),
+    for (mut bg, mut border, highlight) in highlight_q.iter_mut() {
+        let active = match (step, &highlight.kind) {
+            (1 | 2 | 3, HighlightKind::Gauge) => true,
+            (4, HighlightKind::Reactivity) => true,
+            (5, HighlightKind::Turbine) => true,
+            _ => false,
         };
 
-        node.left = Val::Px(translation.x + offset_x);
-        node.top = Val::Px(translation.y + offset_y);
-        node.width = Val::Px(width);
-        node.height = Val::Px(height);
-        border_color.set_all(Color::srgb(1.0, 1.0, 0.4));
-        bg_color.0 = Color::srgba(1.0, 1.0, 0.4, 0.1);
+        let (fill_a, border_a) = if active { (alpha, border_alpha) } else { (0.0, 0.0) };
+
+        *bg = BackgroundColor(Color::srgba(1.0, 1.0, 0.3, fill_a));
+        border.top = Color::srgba(1.0, 1.0, 0.3, border_a);
+        border.right = Color::srgba(1.0, 1.0, 0.3, border_a);
+        border.bottom = Color::srgba(1.0, 1.0, 0.3, border_a);
+        border.left = Color::srgba(1.0, 1.0, 0.3, border_a);
     }
 }
 
