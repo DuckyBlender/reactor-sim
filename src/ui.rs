@@ -510,8 +510,6 @@ fn update_slider_visuals(
             &Hovered,
             &CoreSliderDragState,
             Has<InteractionDisabled>,
-            Has<ReactivitySlider>,
-            Has<TurbineSlider>,
         ),
         (
             Or<(
@@ -530,16 +528,9 @@ fn update_slider_visuals(
         Without<ReactorSlider>,
     >,
 ) {
-    for (slider_ent, value, range, hovered, drag_state, disabled, is_reactivity, is_turbine) in
+    for (slider_ent, value, range, hovered, drag_state, disabled) in
         sliders.iter()
     {
-        let slider_type = if is_reactivity {
-            "Reactivity"
-        } else if is_turbine {
-            "Turbine"
-        } else {
-            "Unknown"
-        };
         for child in children.iter_descendants(slider_ent) {
             if let Ok((mut thumb_node, mut thumb_bg, is_thumb)) = thumbs.get_mut(child)
                 && is_thumb
@@ -578,6 +569,7 @@ fn update_slider_value_text(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn update_indicators(
     reactor: Res<ReactorState>,
     turbine: Res<TurbineState>,
