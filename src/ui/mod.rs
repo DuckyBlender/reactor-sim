@@ -175,7 +175,7 @@ fn handle_unpause_input(
 }
 
 fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Camera2d);
+    commands.spawn((Camera2d, DespawnOnExit(GameState::Paused)));
 
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
 
