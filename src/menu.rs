@@ -179,7 +179,15 @@ fn setup_credits(mut commands: Commands) {
             parent.spawn((
                 Text::new(
                     "
-            Credits here (fill in in the end)
+                Reactor Simulator
+
+                Autorzy:
+
+                Kacper Sowinski - Project Manager, Developer
+                Alan Klas - Lead Developer, Code Reviewer, 
+                Mateusz Oskar Kmiec - Developer, Sound & Visual Designer,
+                Ignacy Stykiel - Developer, Sound & Visual Designer
+                
                 ",
                 ),
                 TextFont {
