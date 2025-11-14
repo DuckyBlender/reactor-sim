@@ -25,7 +25,7 @@ impl Plugin for AudioPlugin {
             .add_systems(
                 Update,
                 update_audio_volume.run_if(in_state(GameState::InGame)),
-            );
+            );    
     }
 }
 
@@ -36,6 +36,7 @@ fn setup_audio(mut commands: Commands, asset_server: Res<AssetServer>) {
 fn create_background_music(asset_server: Res<AssetServer>) -> impl Bundle {
     (
         AudioPlayer::new(asset_server.load("sound/backgroundmusic.mp3")),
+        PlaybackSettings::LOOP,
         BackgroundMusic,
     )
 }
