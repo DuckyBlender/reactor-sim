@@ -13,7 +13,7 @@ pub struct CreditsButton;
 #[derive(Component)]
 pub struct BackButton;
 
-pub fn main_menu_plugin(app: &mut App) {
+pub fn main_menu(app: &mut App) {
     app.add_systems(OnEnter(GameState::MainMenu), setup_main_menu)
         .add_systems(
             Update,
@@ -138,8 +138,7 @@ fn setup_main_menu(mut commands: Commands) {
 
 fn setup_credits(mut commands: Commands) {
     commands.spawn((Camera2d, DespawnOnExit(GameState::Credits)));
-    commands
-        .spawn((
+    commands.spawn((
             DespawnOnExit(GameState::Credits),
             Node {
                 width: Val::Percent(100.0),
@@ -290,4 +289,3 @@ fn handle_back_button(
         }
     }
 }
-

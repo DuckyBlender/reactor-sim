@@ -31,6 +31,6 @@ fn main() {
         sound::AudioPlugin
     ))
     .init_state::<GameState>();
-    menu::main_menu_plugin(&mut app);
+    menu::main_menu(&mut app);
     app.run();
 }
