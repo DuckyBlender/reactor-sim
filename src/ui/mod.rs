@@ -84,6 +84,7 @@ fn setup_game_ui(
         },
         BackgroundColor(Color::NONE),
         TabGroup::default(),
+        Transform::default(),
         children![
             // Title
             (
@@ -127,6 +128,7 @@ fn setup_game_ui(
                     align_items: AlignItems::End,
                     ..default()
                 },
+                Transform::default(),
                 children![
                     // Left side - Gauges
                     indicators::gauge_grid(font.clone()),

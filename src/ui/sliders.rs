@@ -130,6 +130,7 @@ pub fn slider_panel(
         },
         BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.5)),
         BorderRadius::all(Val::Px(6.0)),
+        Transform::default(),
         children![
             // Reactivity slider
             (
@@ -206,6 +207,7 @@ pub fn slider_panel(
                     align_items: AlignItems::Center,
                     ..default()
                 },
+                Transform::default(),
                 children![
                     // Turbine icon (spinning)
                     (
