@@ -1,0 +1,305 @@
+use bevy::prelude::*;
+
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
+pub enum GameState {
+    #[default]
+    MainMenu,
+    InGame,
+    Credits,
+}
+
+#[derive(Component)]
+pub struct MainMenuUI;
+
+#[derive(Component)]
+pub struct PlayButton;
+
+#[derive(Component)]
+pub struct QuitButton;
+
+#[derive(Component)]
+pub struct CreditsButton;
+
+#[derive(Component)]
+pub struct CreditsUI;
+
+#[derive(Component)]
+pub struct BackButton;
+
+pub fn main_menu_plugin(app: &mut App) {
+    app.init_state::<GameState>()
+        .add_systems(OnEnter(GameState::MainMenu), setup_main_menu)
+        .add_systems(OnExit(GameState::MainMenu), cleanup_main_menu)
+        .add_systems(
+            Update,
+            (
+                button_system,
+                handle_play_button,
+                handle_quit_button,
+                handle_credits_button,
+            )
+                .run_if(in_state(GameState::MainMenu)),
+        )
+        .add_systems(OnEnter(GameState::Credits), setup_credits)
+        .add_systems(OnExit(GameState::Credits), cleanup_credits)
+        .add_systems(
+            Update,
+            (button_system, handle_back_button).run_if(in_state(GameState::Credits)),
+        );
+}
+
+fn setup_main_menu(mut commands: Commands, _asset_server: Res<AssetServer>) {
+    commands.spawn(Camera2d);
+
+    commands.spawn((
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.75)),
+        MainMenuUI,
+    ))
+    .with_children(|parent| {
+        parent.spawn((
+            Text::new("Reactor Simulator"),
+            TextFont {
+                font_size: 64.0,
+                ..default()
+            },
+            TextColor(Color::WHITE),
+            Node {
+                margin: UiRect::all(Val::Px(20.0)),
+                ..default()
+            },
+        ));
+
+        parent
+            .spawn((
+                Button,
+                Node {
+                    width: Val::Px(200.0),
+                    height: Val::Px(60.0),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    margin: UiRect::all(Val::Px(10.0)),
+                    ..default()
+                },
+                BackgroundColor(Color::srgb(0.25, 0.75, 0.25)),
+                PlayButton,
+            ))
+            .with_children(|parent| {
+                parent.spawn((
+                    Text::new("Play"),
+                    TextFont {
+                        font_size: 24.0,
+                        ..default()
+                    },
+                    TextColor(Color::WHITE),
+                ));
+            });
+
+        parent
+            .spawn((
+                Button,
+                Node {
+                    width: Val::Px(200.0),
+                    height: Val::Px(60.0),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    margin: UiRect::all(Val::Px(10.0)),
+                    ..default()
+                },
+                BackgroundColor(Color::srgb(0.00, 0.00, 0.5)),
+                CreditsButton,
+            ))
+            .with_children(|parent| {
+                parent.spawn((
+                    Text::new("Credits"),
+                    TextFont {
+                        font_size: 24.0,
+                        ..default()
+                    },
+                    TextColor(Color::WHITE),
+                ));
+            });
+
+        parent
+            .spawn((
+                Button,
+                Node {
+                    width: Val::Px(200.0),
+                    height: Val::Px(60.0),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    margin: UiRect::all(Val::Px(10.0)),
+                    ..default()
+                },
+                BackgroundColor(Color::srgb(0.75, 0.25, 0.25)),
+                QuitButton,
+            ))
+            .with_children(|parent| {
+                parent.spawn((
+                    Text::new("Quit"),
+                    TextFont {
+                        font_size: 24.0,
+                        ..default()
+                    },
+                    TextColor(Color::WHITE),
+                ));
+            });
+    });
+}
+
+fn cleanup_main_menu(mut commands: Commands, query: Query<Entity, With<MainMenuUI>>) {
+    for entity in query.iter() {
+        commands.entity(entity).try_despawn();
+    }
+}
+
+fn setup_credits(mut commands: Commands) {
+    commands.spawn(Camera2d);
+
+    commands
+        .spawn((
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                flex_direction: FlexDirection::Column,
+                ..default()
+            },
+            BackgroundColor(Color::BLACK),
+            CreditsUI,
+        ))
+        .with_children(|parent| {
+            parent.spawn((
+                Text::new("
+            Credits here (fill in in the end)
+                "),
+                TextFont {
+                    font_size: 32.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                Node {
+                    margin: UiRect::all(Val::Px(20.0)),
+                    ..default()
+                },
+            ));
+
+            parent
+                .spawn((
+                    Button,
+                    Node {
+                        width: Val::Px(150.0),
+                        height: Val::Px(50.0),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        margin: UiRect::all(Val::Px(20.0)),
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
+                    BackButton,
+                ))
+                .with_children(|p| {
+                    p.spawn((
+                        Text::new("Back"),
+                        TextFont {
+                            font_size: 24.0,
+                            ..default()
+                        },
+                        TextColor(Color::WHITE),
+                    ));
+                });
+        });
+}
+
+fn cleanup_credits(mut commands: Commands, query: Query<Entity, With<CreditsUI>>) {
+    for entity in query.iter() {
+        commands.entity(entity).try_despawn();
+    }
+}
+
+fn button_system(
+    mut interaction_query: Query<
+        (&Interaction, &mut BackgroundColor, Option<&PlayButton>, Option<&QuitButton>),
+        (Changed<Interaction>, With<Button>),
+    >,
+) {
+    for (interaction, mut color, play_btn, quit_btn) in &mut interaction_query {
+        let (normal_color, hover_color, pressed_color) = if play_btn.is_some() {
+            (
+                Color::srgb(0.25, 0.75, 0.25),
+                Color::srgb(0.45, 0.85, 0.45),
+                Color::srgb(0.35, 0.65, 0.35),
+            )
+        } else if quit_btn.is_some() {
+            (
+                Color::srgb(0.75, 0.25, 0.25),
+                Color::srgb(0.85, 0.45, 0.45),
+                Color::srgb(0.65, 0.35, 0.35),
+            )
+        } else {
+            (
+                Color::srgb(0.2, 0.2, 0.2),
+                Color::srgb(0.35, 0.35, 0.35),
+                Color::srgb(0.15, 0.15, 0.15),
+            )
+        };
+
+        match *interaction {
+            Interaction::Pressed => *color = pressed_color.into(),
+            Interaction::Hovered => *color = hover_color.into(),
+            Interaction::None => *color = normal_color.into(),
+        }
+    }
+}
+
+fn handle_play_button(
+    interaction_query: Query<&Interaction, (Changed<Interaction>, With<PlayButton>)>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    for interaction in &interaction_query {
+        if *interaction == Interaction::Pressed {
+            next_state.set(GameState::InGame);
+        }
+    }
+}
+
+fn handle_quit_button(
+    interaction_query: Query<&Interaction, (Changed<Interaction>, With<QuitButton>)>,
+    mut exit_writer: MessageWriter<AppExit>,
+) {
+    for interaction in &interaction_query {
+        if *interaction == Interaction::Pressed {
+            exit_writer.write(AppExit::Success);
+        }
+    }
+}
+
+fn handle_credits_button(
+    interaction_query: Query<&Interaction, (Changed<Interaction>, With<CreditsButton>)>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    for interaction in &interaction_query {
+        if *interaction == Interaction::Pressed {
+            next_state.set(GameState::Credits);
+        }
+    }
+}
+
+fn handle_back_button(
+    interaction_query: Query<&Interaction, (Changed<Interaction>, With<BackButton>)>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    for interaction in &interaction_query {
+        if *interaction == Interaction::Pressed {
+            next_state.set(GameState::MainMenu);
+        }
+    }
+}
