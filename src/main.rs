@@ -7,6 +7,7 @@ use bevy::{
 mod simulation;
 mod ui;
 mod menu;
+mod sound;
 
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 pub enum GameState {
@@ -27,6 +28,7 @@ fn main() {
         TabNavigationPlugin,
         simulation::SimulationPlugin,
         ui::ReactorUiPlugin,
+        sound::AudioPlugin
     ))
     .init_state::<GameState>();
     menu::main_menu_plugin(&mut app);
