@@ -108,6 +108,8 @@ pub fn slider_panel(
             padding: UiRect::all(Val::Px(20.0)),
             ..default()
         },
+        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.5)),
+        BorderRadius::all(Val::Px(10.0)),
         children![
             // Reactivity slider
             (

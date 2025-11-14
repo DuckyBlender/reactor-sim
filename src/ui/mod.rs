@@ -57,8 +57,12 @@ fn setup_game_ui(
     controls: Res<ControlSettings>,
     asset_server: Res<AssetServer>,
 ) {
-    // Camera
-    commands.spawn((Camera2d, DespawnOnExit(GameState::InGame)));
+    // Camera for 3D
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(0., 5., 12.).looking_at(Vec3::new(0., 4., 0.), Vec3::Y),
+        DespawnOnExit(GameState::InGame)
+    ));
 
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
 
@@ -73,7 +77,7 @@ fn setup_game_ui(
             row_gap: Val::Px(30.0),
             ..default()
         },
-        BackgroundColor(Color::srgb(0.08, 0.08, 0.12)),
+        BackgroundColor(Color::NONE),
         TabGroup::default(),
         children![
             // Title

@@ -51,8 +51,11 @@ pub fn gauge_grid(font: Handle<Font>) -> impl Bundle {
             grid_template_rows: vec![GridTrack::auto(), GridTrack::auto()],
             column_gap: Val::Px(30.0),
             row_gap: Val::Px(30.0),
+            padding: UiRect::all(Val::Px(20.0)),
             ..default()
         },
+        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.5)),
+        BorderRadius::all(Val::Px(10.0)),
         children![
             gauge(
                 "Temperatura Reaktora",

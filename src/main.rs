@@ -8,6 +8,7 @@ mod simulation;
 mod ui;
 mod menu;
 mod sound;
+mod model;
 
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 pub enum GameState {
@@ -28,7 +29,8 @@ fn main() {
         TabNavigationPlugin,
         simulation::SimulationPlugin,
         ui::ReactorUiPlugin,
-        sound::AudioPlugin
+        sound::AudioPlugin,
+        model::Reactor3dPlugin
     ))
     .init_state::<GameState>();
     menu::main_menu_plugin(&mut app);
