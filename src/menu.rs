@@ -472,7 +472,7 @@ fn setup_settings(
                         }).with_children(|parent| {
                         parent.spawn(create_volume_slider(settings.volume));
                         parent.spawn((
-                            Text::new("100%"),
+                            Text::new(format!("{}%", (settings.volume * 100.0) as u8)),
                             VolumeText
                         ));
                     });
