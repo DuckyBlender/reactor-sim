@@ -25,6 +25,7 @@ pub fn main_menu_plugin(app: &mut App) {
                 handle_play_button,
                 handle_quit_button,
                 handle_credits_button,
+                handle_tutorial_button,
             )
                 .run_if(in_state(GameState::MainMenu)),
         )
@@ -300,6 +301,18 @@ fn handle_credits_button(
         if *interaction == Interaction::Pressed {
             info!("State change: MainMenu -> Credits");
             next_state.set(GameState::Credits);
+        }
+    }
+}
+
+fn handle_tutorial_button(
+    interaction_query: Query<&Interaction, (Changed<Interaction>, With<TutorialButton>)>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    for interaction in &interaction_query {
+        if *interaction == Interaction::Pressed {
+            info!("State change: MainMenu -> Tutorial");
+            next_state.set(GameState::Tutorial);
         }
     }
 }

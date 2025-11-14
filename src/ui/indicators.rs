@@ -93,6 +93,10 @@ fn turbine_gauge(font: Handle<Font>) -> impl Bundle {
                     ..default()
                 },
                 TextColor(Color::srgb(0.7, 0.7, 0.7)),
+                Node {
+                    height: Val::Px(17.0), // Match title height
+                    ..default()
+                },
             ),
             // Gauge visual
             (
@@ -103,6 +107,7 @@ fn turbine_gauge(font: Handle<Font>) -> impl Bundle {
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
                     flex_direction: FlexDirection::Column,
+                    row_gap: Val::Px(2.0),
                     ..default()
                 },
                 BorderRadius::MAX,
@@ -161,6 +166,10 @@ fn gauge(
                     ..default()
                 },
                 TextColor(Color::srgb(0.7, 0.7, 0.7)),
+                Node {
+                    height: Val::Px(17.0), // Fixed title height for alignment
+                    ..default()
+                },
             ),
             // Gauge visual (simplified circle)
             (

@@ -7,8 +7,8 @@ use bevy::{
 
 use crate::{GameState, simulation::{ControlSettings, GameOverReason, EnvironmentState}};
 
-mod indicators;
-mod sliders;
+pub mod indicators;
+pub mod sliders;
 
 #[derive(Component)]
 struct GameOverReasonText;
