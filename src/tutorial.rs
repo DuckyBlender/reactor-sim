@@ -19,8 +19,7 @@ impl Plugin for TutorialPlugin {
                     update_highlight_box,
                     update_uranek_animation,
                 ).run_if(in_state(GameState::Tutorial)),
-            )
-            .add_systems(OnExit(GameState::Tutorial), teardown_tutorial_scene);
+            );
     }
 }
 
@@ -63,9 +62,6 @@ struct TutorialTurbineSliderMarker;
 
 #[derive(Component)]
 struct TutorialGaugeGridMarker;
-
-#[derive(Component)]
-struct DespawnOnExit(GameState);
 
 // New: highlight components for tutorial focus frames
 #[derive(Component)]
@@ -410,16 +406,6 @@ fn setup_tutorial_scene(
         });
 
     // Remove old pointer arrow entity entirely (no longer needed)
-}
-
-fn teardown_tutorial_scene(
-    mut commands: Commands,
-    query: Query<Entity, With<DespawnOnExit>>,
-) {
-    for entity in query.iter() {
-        commands.entity(entity).despawn();
-    }
-    commands.remove_resource::<TutorialState>();
 }
 
 fn advance_tutorial_on_space(
