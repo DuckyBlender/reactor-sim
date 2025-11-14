@@ -11,20 +11,29 @@ mod sliders;
 #[derive(Component)]
 struct GameOverBanner;
 
+#[derive(Component)]
+struct GameUI;
+
+#[derive(Component)]
+struct GameCamera;
+
 pub struct ReactorUiPlugin;
 
 impl Plugin for ReactorUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_ui).add_systems(
-            Update,
-            (
-                sliders::sync_slider_values,
-                sliders::update_slider_visuals.after(sliders::sync_slider_values),
-                sliders::update_slider_value_text,
-                indicators::update_indicators,
-                update_game_over_overlay,
-            ),
-        );
+        app.add_systems(OnEnter(GameState::InGame), setup_ui)
+            .add_systems(OnExit(GameState::InGame), cleanup_ui)
+            .add_systems(
+                Update,
+                (
+                    sliders::sync_slider_values,
+                    sliders::update_slider_visuals.after(sliders::sync_slider_values),
+                    sliders::update_slider_value_text,
+                    indicators::update_indicators,
+                    update_game_over_overlay,
+                )
+                    .run_if(in_state(GameState::InGame).or(in_state(GameState::GameOver))),
+            );
     }
 }
 
@@ -34,12 +43,13 @@ fn setup_ui(
     asset_server: Res<AssetServer>,
 ) {
     // Camera
-    commands.spawn(Camera2d);
+    commands.spawn((Camera2d, GameCamera));
 
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
 
     // Main UI root
     commands.spawn((
+        GameUI,
         Node {
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
@@ -109,6 +119,7 @@ fn setup_ui(
 
     // Game Over overlay
     commands.spawn((
+        GameUI,
         Node {
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
@@ -131,6 +142,19 @@ fn setup_ui(
             TextColor(Color::srgb(1.0, 0.2, 0.2)),
         )],
     ));
+}
+
+fn cleanup_ui(
+    mut commands: Commands,
+    ui_query: Query<Entity, With<GameUI>>,
+    camera_query: Query<Entity, With<GameCamera>>,
+) {
+    for entity in ui_query.iter() {
+        commands.entity(entity).despawn();
+    }
+    for entity in camera_query.iter() {
+        commands.entity(entity).despawn();
+    }
 }
 
 fn update_game_over_overlay(

@@ -230,7 +230,6 @@ pub fn create_reactivity_slider(initial_value: f32) -> impl Bundle {
         base_slider(initial_value),
         observe(
             |value_change: On<ValueChange<f32>>, mut controls: ResMut<ControlSettings>| {
-                info!("Reactivity slider changed: {}", value_change.value);
                 controls.reactivity_target = value_change.value;
             },
         ),
@@ -243,7 +242,6 @@ pub fn create_turbine_slider(initial_value: f32) -> impl Bundle {
         base_slider(initial_value),
         observe(
             |value_change: On<ValueChange<f32>>, mut controls: ResMut<ControlSettings>| {
-                info!("Turbine slider changed: {}", value_change.value);
                 controls.turbine_target = value_change.value;
             },
         ),

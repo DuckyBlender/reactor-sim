@@ -6,24 +6,28 @@ use bevy::{
 
 mod simulation;
 mod ui;
+mod menu;
 
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 pub enum GameState {
     #[default]
+    MainMenu,
     InGame,
+    Credits,
     GameOver,
 }
 
 fn main() {
-    App::new()
-        .add_plugins((
-            DefaultPlugins,
-            UiWidgetsPlugins,
-            InputDispatchPlugin,
-            TabNavigationPlugin,
-            simulation::SimulationPlugin,
-            ui::ReactorUiPlugin,
-        ))
-        .init_state::<GameState>()
-        .run();
+    let mut app = App::new();
+    app.add_plugins((
+        DefaultPlugins,
+        UiWidgetsPlugins,
+        InputDispatchPlugin,
+        TabNavigationPlugin,
+        simulation::SimulationPlugin,
+        ui::ReactorUiPlugin,
+    ))
+    .init_state::<GameState>();
+    menu::main_menu_plugin(&mut app);
+    app.run();
 }

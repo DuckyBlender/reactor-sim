@@ -23,15 +23,11 @@ impl Plugin for SimulationPlugin {
     }
 }
 
-pub const REACTOR_TEMP_LIMIT: f32 = 1100.0; // °C
-pub const TURBINE_TEMP_LIMIT: f32 = 700.0; // °C
-
-const REACTOR_TEMP_IDLE: f32 = 320.0;
+pub const REACTOR_TEMP_LIMIT: f32 = 1200.0; // °C
+pub const TURBINE_TEMP_LIMIT: f32 = 290.0; // °C
+const ROOM_TEMPERATURE: f32 = 20.0; // °C
 const REACTOR_TEMP_MAX: f32 = 1200.0;
-const REACTOR_PRESSURE_IDLE: f32 = 12.0; // MPa
-const REACTOR_PRESSURE_MAX: f32 = 21.0; // MPa
-const TURBINE_TEMP_IDLE: f32 = 230.0;
-const RADIATION_BACKGROUND: f32 = 0.12; // mSv/h
+const REACTOR_PRESSURE_MAX: f32 = 160.0;
 
 #[derive(Resource, Debug)]
 pub struct ReactorState {
@@ -42,8 +38,8 @@ pub struct ReactorState {
 impl Default for ReactorState {
     fn default() -> Self {
         Self {
-            temperature: REACTOR_TEMP_IDLE,
-            pressure: REACTOR_PRESSURE_IDLE,
+            temperature: ROOM_TEMPERATURE,
+            pressure: 0.0,
         }
     }
 }
@@ -57,8 +53,8 @@ pub struct TurbineState {
 impl Default for TurbineState {
     fn default() -> Self {
         Self {
-            speed: 1500.0,
-            temperature: TURBINE_TEMP_IDLE,
+            speed: 0.0,
+            temperature: ROOM_TEMPERATURE,
         }
     }
 }
@@ -66,14 +62,14 @@ impl Default for TurbineState {
 #[derive(Resource, Debug)]
 pub struct EnvironmentState {
     pub money: f32,
-    pub radiation: f32, // mSv/h
+    pub power_generated: f32, // MW
 }
 
 impl Default for EnvironmentState {
     fn default() -> Self {
         Self {
             money: 1_000_000.0,
-            radiation: RADIATION_BACKGROUND,
+            power_generated: 0.0,
         }
     }
 }
@@ -117,42 +113,43 @@ fn interpolate_controls(mut controls: ResMut<ControlSettings>, time: Res<Time>) 
 
 fn simulate_reactor(
     mut reactor: ResMut<ReactorState>,
-    mut environment: ResMut<EnvironmentState>,
     controls: Res<ControlSettings>,
     time: Res<Time>,
 ) {
     let delta = time.delta_secs();
     let heat = (controls.reactivity_applied / 100.0).clamp(0.0, 1.2);
-    let temperature_target = REACTOR_TEMP_IDLE + heat * (REACTOR_TEMP_MAX - REACTOR_TEMP_IDLE);
+    let temperature_target = ROOM_TEMPERATURE + heat * (REACTOR_TEMP_MAX - ROOM_TEMPERATURE);
     reactor.temperature = smooth_towards(reactor.temperature, temperature_target, 0.8, delta);
 
-    let pressure_target = REACTOR_PRESSURE_IDLE
-        + heat * (REACTOR_PRESSURE_MAX - REACTOR_PRESSURE_IDLE)
+    let pressure_target = heat * REACTOR_PRESSURE_MAX
         + ((reactor.temperature - 600.0).max(0.0) * 0.01);
     reactor.pressure = smooth_towards(reactor.pressure, pressure_target, 1.5, delta);
-
-    let radiation_target = RADIATION_BACKGROUND + ((reactor.temperature - 650.0).max(0.0) * 0.02);
-    environment.radiation = smooth_towards(environment.radiation, radiation_target, 0.5, delta);
 }
 
 fn simulate_turbine(
     reactor: Res<ReactorState>,
     mut turbine: ResMut<TurbineState>,
+    mut environment: ResMut<EnvironmentState>,
     controls: Res<ControlSettings>,
     time: Res<Time>,
 ) {
     let delta = time.delta_secs();
-    let steam_supply = ((reactor.temperature - REACTOR_TEMP_IDLE)
-        / (REACTOR_TEMP_MAX - REACTOR_TEMP_IDLE))
+    let steam_supply = ((reactor.temperature - ROOM_TEMPERATURE)
+        / (REACTOR_TEMP_MAX - ROOM_TEMPERATURE))
         .clamp(0.0, 1.2);
     let demand = (controls.turbine_applied / 100.0).clamp(0.0, 1.2);
     let mismatch = demand - steam_supply;
     let torque = (steam_supply * 2000.0) - mismatch * 300.0;
-    let base_temperature = TURBINE_TEMP_IDLE + steam_supply * 320.0 + mismatch.abs() * 280.0;
+    let base_temperature = ROOM_TEMPERATURE + steam_supply * 320.0 + mismatch.abs() * 280.0;
     let temperature_target = base_temperature.min(900.0);
 
     turbine.speed = smooth_towards(turbine.speed, torque, 2.0, delta);
     turbine.temperature = smooth_towards(turbine.temperature, temperature_target, 1.1, delta);
+
+    // Calculate power generation (MW) based on turbine speed
+    // Assuming optimal speed is around 1800-2000 RPM * 100
+    let power_target = (turbine.speed / 2000.0).max(0.0) * 1000.0; // Max 1000 MW at full speed
+    environment.power_generated = smooth_towards(environment.power_generated, power_target, 2.0, delta);
 }
 
 fn evaluate_loss(
@@ -160,7 +157,11 @@ fn evaluate_loss(
     turbine: Res<TurbineState>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
-    if reactor.temperature >= REACTOR_TEMP_LIMIT || turbine.temperature >= TURBINE_TEMP_LIMIT {
+    if reactor.temperature >= REACTOR_TEMP_LIMIT {
+        info!("Game Over: Reactor temperature exceeded limit ({}°C >= {}°C)", reactor.temperature, REACTOR_TEMP_LIMIT);
+        next_state.set(GameState::GameOver);
+    } else if turbine.temperature >= TURBINE_TEMP_LIMIT {
+        info!("Game Over: Turbine temperature exceeded limit ({}°C >= {}°C)", turbine.temperature, TURBINE_TEMP_LIMIT);
         next_state.set(GameState::GameOver);
     }
 }

@@ -12,7 +12,7 @@ pub struct ReactorPressureIndicator;
 pub struct TurbineTempIndicator;
 
 #[derive(Component)]
-pub struct RadiationIndicator;
+pub struct PowerIndicator;
 
 pub fn gauge_grid(font: Handle<Font>) -> impl Bundle {
     (
@@ -43,7 +43,7 @@ pub fn gauge_grid(font: Handle<Font>) -> impl Bundle {
                 TurbineTempIndicator,
                 font.clone()
             ),
-            gauge("Promieniowanie", "0 mSv/h", RadiationIndicator, font.clone()),
+            gauge("Moc", "0 MW", PowerIndicator, font.clone()),
         ],
     )
 }
@@ -109,7 +109,7 @@ pub fn update_indicators(
     reactor_temp: Query<Entity, With<ReactorTempIndicator>>,
     reactor_pressure: Query<Entity, With<ReactorPressureIndicator>>,
     turbine_temp: Query<Entity, With<TurbineTempIndicator>>,
-    radiation: Query<Entity, With<RadiationIndicator>>,
+    power: Query<Entity, With<PowerIndicator>>,
 ) {
     if !(reactor.is_changed() || turbine.is_changed() || environment.is_changed()) {
         return;
@@ -133,9 +133,9 @@ pub fn update_indicators(
         }
     }
 
-    for entity in radiation.iter() {
+    for entity in power.iter() {
         if let Ok(mut text) = texts.get_mut(entity) {
-            **text = format!("{:.0} Rad", environment.radiation);
+            **text = format!("{:.0} MW", environment.power_generated);
         }
     }
 }
