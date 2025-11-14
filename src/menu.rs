@@ -32,7 +32,7 @@ pub fn main_menu_plugin(app: &mut App) {
         );
 }
 
-fn setup_main_menu(mut commands: Commands, _asset_server: Res<AssetServer>) {
+fn setup_main_menu(mut commands: Commands) {
     commands.spawn((Camera2d, DespawnOnExit(GameState::MainMenu)));
     commands.spawn((
         DespawnOnExit(GameState::MainMenu),
