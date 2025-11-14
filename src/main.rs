@@ -4,11 +4,12 @@ use bevy::{
     prelude::*,
 };
 
-mod simulation;
-mod ui;
 mod menu;
+mod model;
+mod simulation;
 mod sound;
 mod tutorial;
+mod ui;
 
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 pub enum GameState {
@@ -19,6 +20,7 @@ pub enum GameState {
     Credits,
     GameOver,
     Tutorial,
+    Settings,
 }
 
 fn main() {
@@ -32,8 +34,9 @@ fn main() {
         ui::ReactorUiPlugin,
         sound::AudioPlugin,
         tutorial::TutorialPlugin,
+        model::Reactor3dPlugin,
+        menu::main_menu_plugin,
     ))
     .init_state::<GameState>();
-    menu::main_menu_plugin(&mut app);
     app.run();
 }

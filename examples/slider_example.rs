@@ -1,14 +1,14 @@
 use bevy::{
     input_focus::{
-        tab_navigation::{TabGroup, TabIndex, TabNavigationPlugin},
         InputDispatchPlugin,
+        tab_navigation::{TabGroup, TabIndex, TabNavigationPlugin},
     },
     picking::hover::Hovered,
     prelude::*,
     ui::InteractionDisabled,
     ui_widgets::{
-        observe, CoreSliderDragState, Slider, SliderRange, SliderThumb, SliderValue,
-        TrackClick, UiWidgetsPlugins, ValueChange,
+        CoreSliderDragState, Slider, SliderRange, SliderThumb, SliderValue, TrackClick,
+        UiWidgetsPlugins, ValueChange, observe,
     },
 };
 
@@ -55,9 +55,7 @@ fn update_slider_value(
 ) {
     if res.is_changed() {
         for slider_ent in sliders.iter_mut() {
-            commands
-                .entity(slider_ent)
-                .insert(SliderValue(res.value));
+            commands.entity(slider_ent).insert(SliderValue(res.value));
         }
     }
 }
@@ -190,7 +188,12 @@ fn update_slider_style(
 
 fn update_slider_style_on_removal(
     sliders: Query<
-        (Entity, &Hovered, &CoreSliderDragState, Has<InteractionDisabled>),
+        (
+            Entity,
+            &Hovered,
+            &CoreSliderDragState,
+            Has<InteractionDisabled>,
+        ),
         With<DemoSlider>,
     >,
     children: Query<&Children>,
@@ -200,7 +203,9 @@ fn update_slider_style_on_removal(
     removed_disabled.read().for_each(|entity| {
         if let Ok((slider_ent, hovered, drag_state, disabled)) = sliders.get(entity) {
             for child in children.iter_descendants(slider_ent) {
-                if let Ok((mut thumb_bg, is_thumb)) = thumbs.get_mut(child) && is_thumb {
+                if let Ok((mut thumb_bg, is_thumb)) = thumbs.get_mut(child)
+                    && is_thumb
+                {
                     thumb_bg.0 = thumb_color(disabled, hovered.0 | drag_state.dragging);
                 }
             }
@@ -215,4 +220,3 @@ fn thumb_color(disabled: bool, hovered: bool) -> Color {
         _ => SLIDER_THUMB,
     }
 }
-

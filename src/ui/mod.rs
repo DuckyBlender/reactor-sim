@@ -1,11 +1,14 @@
 use bevy::{
     input_focus::tab_navigation::TabGroup,
-    prelude::*,
     picking::hover::Hovered,
-    ui_widgets::{Button, observe, Activate},
+    prelude::*,
+    ui_widgets::{Activate, Button, observe},
 };
 
-use crate::{GameState, simulation::{ControlSettings, GameOverReason, EnvironmentState}};
+use crate::{
+    GameState,
+    simulation::{ControlSettings, EnvironmentState, GameOverReason},
+};
 
 pub mod indicators;
 pub mod sliders;
@@ -36,6 +39,12 @@ impl Plugin for ReactorUiPlugin {
                     sliders::sync_slider_values,
                     sliders::update_slider_visuals.after(sliders::sync_slider_values),
                     sliders::update_slider_value_text,
+                    sliders::update_applied_value_text,
+                ),
+            )
+            .add_systems(
+                Update,
+                (
                     sliders::spin_turbine_icon,
                     indicators::update_indicators,
                     indicators::update_gauge_colors,
@@ -47,7 +56,10 @@ impl Plugin for ReactorUiPlugin {
                     .run_if(in_state(GameState::InGame)),
             )
             .add_systems(OnEnter(GameState::Paused), setup_pause_menu)
-            .add_systems(Update, handle_unpause_input.run_if(in_state(GameState::Paused)))
+            .add_systems(
+                Update,
+                handle_unpause_input.run_if(in_state(GameState::Paused)),
+            )
             .add_systems(OnEnter(GameState::GameOver), setup_game_over_ui);
     }
 }
@@ -57,9 +69,6 @@ fn setup_game_ui(
     controls: Res<ControlSettings>,
     asset_server: Res<AssetServer>,
 ) {
-    // Camera
-    commands.spawn((Camera2d, DespawnOnExit(GameState::InGame)));
-
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
 
     // Main UI root
@@ -73,8 +82,9 @@ fn setup_game_ui(
             row_gap: Val::Px(30.0),
             ..default()
         },
-        BackgroundColor(Color::srgb(0.08, 0.08, 0.12)),
+        BackgroundColor(Color::NONE),
         TabGroup::default(),
+        Transform::default(),
         children![
             // Title
             (
@@ -118,6 +128,7 @@ fn setup_game_ui(
                     align_items: AlignItems::End,
                     ..default()
                 },
+                Transform::default(),
                 children![
                     // Left side - Gauges
                     indicators::gauge_grid(font.clone()),
@@ -141,7 +152,7 @@ fn update_money_display(
     if !environment.is_changed() {
         return;
     }
-    
+
     for mut text in texts.iter_mut() {
         **text = format!("A${:.0}", environment.money);
     }
@@ -165,12 +176,11 @@ fn handle_unpause_input(
     }
 }
 
-fn setup_pause_menu(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
+fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.spawn((Camera2d, DespawnOnExit(GameState::Paused)));
+
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
-    
+
     commands.spawn((
         DespawnOnExit(GameState::Paused),
         Node {
@@ -182,6 +192,8 @@ fn setup_pause_menu(
             ..default()
         },
         BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.7)),
+        Transform::default(),
+        GlobalTransform::default(),
         PauseMenu,
         children![
             (
@@ -226,8 +238,7 @@ fn setup_pause_menu(
                 Hovered::default(),
                 ReturnToMenuButton,
                 observe(
-                    |_activate: On<Activate>,
-                     mut next_state: ResMut<NextState<GameState>>| {
+                    |_activate: On<Activate>, mut next_state: ResMut<NextState<GameState>>| {
                         next_state.set(GameState::MainMenu);
                     },
                 ),
@@ -318,8 +329,7 @@ fn setup_game_over_ui(
                 Hovered::default(),
                 ReturnToMenuButton,
                 observe(
-                    |_activate: On<Activate>,
-                     mut next_state: ResMut<NextState<GameState>>| {
+                    |_activate: On<Activate>, mut next_state: ResMut<NextState<GameState>>| {
                         next_state.set(GameState::MainMenu);
                     },
                 ),
@@ -336,4 +346,3 @@ fn setup_game_over_ui(
         ],
     ));
 }
-
