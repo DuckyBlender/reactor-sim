@@ -73,14 +73,14 @@ pub struct EnvironmentState {
     pub power_generated: f32, // MW
 }
 
-impl Default for EnvironmentState {
-    fn default() -> Self {
-        Self {
-            money: 1_000_000.0,
-            power_generated: 0.0,
+    impl Default for EnvironmentState {
+        fn default() -> Self {
+            Self {
+                money: 0.0,
+                power_generated: 0.0,
+            }
         }
     }
-}
 
 #[derive(Resource, Debug)]
 pub struct ControlSettings {
