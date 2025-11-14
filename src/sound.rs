@@ -1,5 +1,6 @@
 use crate::GameState;
-use bevy::{audio::Volume::Linear, prelude::*};
+use bevy::audio::Volume::Linear;
+use bevy::prelude::*;
 
 #[derive(Component)]
 struct BackgroundMusic;
