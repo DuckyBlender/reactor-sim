@@ -35,6 +35,20 @@ struct TutorialCamera;
 #[derive(Component)]
 struct UranekSprite;
 
+#[derive(Component, Default)]
+struct UranekAnimationState {
+    timer: Timer,
+    current_idle: bool,
+}
+
+#[derive(Component)]
+struct UraneKTextures {
+    greet: Handle<Image>,
+    idle_0: Handle<Image>,
+    idle_1: Handle<Image>,
+    talk: Handle<Image>,
+}
+
 #[derive(Component)]
 struct UranekTextBox;
 
@@ -68,7 +82,6 @@ enum HighlightKind {
 fn setup_tutorial_scene(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     // Reset game state
     commands.insert_resource(ControlSettings::default());
@@ -81,11 +94,12 @@ fn setup_tutorial_scene(
     commands.spawn((Camera2d, TutorialCamera, DespawnOnExit(GameState::Tutorial)));
 
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
-    let uranek_texture: Handle<Image> = asset_server.load("sprites/sprite.png");
 
-    // Create texture atlas for 2x2 sprite grid
-    let layout = TextureAtlasLayout::from_grid(UVec2::new(128, 128), 2, 2, None, None);
-    let texture_atlas_layout = texture_atlas_layouts.add(layout);
+    // Preload UraneK textures
+    let uranek_greet: Handle<Image> = asset_server.load("sprites/greet.png");
+    let uranek_idle_0: Handle<Image> = asset_server.load("sprites/idle_0.png");
+    let uranek_idle_1: Handle<Image> = asset_server.load("sprites/idle_1.png");
+    let uranek_talk: Handle<Image> = asset_server.load("sprites/talk.png");
 
     // Root container
     commands
@@ -125,25 +139,35 @@ fn setup_tutorial_scene(
                             TutorialGaugeGridMarker,
                         ))
                         .with_children(|gauge_container| {
-                            // Highlight behind gauges
-                            gauge_container.spawn((
-                                Node {
-                                    position_type: PositionType::Absolute,
-                                    left: Val::Px(-16.0),
-                                    right: Val::Px(-16.0),
-                                    top: Val::Px(-16.0),
-                                    bottom: Val::Px(-16.0),
-                                    border: UiRect::all(Val::Px(3.0)),
-                                    ..default()
-                                },
-                                BorderRadius::all(Val::Px(12.0)),
-                                BorderColor::all(Color::NONE),
-                                BackgroundColor(Color::srgba(1.0, 1.0, 0.3, 0.0)),
-                                TutorialHighlight { kind: HighlightKind::Gauge },
-                            ));
-
                             // Actual gauge grid UI
-                            gauge_container.spawn(gauge_grid(font.clone()));
+                            // Assume the first spawned child inside `gauge_grid` corresponds to the main reactor gauge;
+                            // we wrap JUST that gauge in a highlight frame instead of the entire grid.
+                            gauge_container
+                                .spawn(Node {
+                                    position_type: PositionType::Relative,
+                                    ..default()
+                                })
+                                .with_children(|single_gauge_wrapper| {
+                                    // Highlight behind a single gauge
+                                    single_gauge_wrapper.spawn((
+                                        Node {
+                                            position_type: PositionType::Absolute,
+                                            left: Val::Px(-16.0),
+                                            right: Val::Px(-16.0),
+                                            top: Val::Px(-16.0),
+                                            bottom: Val::Px(-16.0),
+                                            border: UiRect::all(Val::Px(3.0)),
+                                            ..default()
+                                        },
+                                        BorderRadius::all(Val::Px(12.0)),
+                                        BorderColor::all(Color::NONE),
+                                        BackgroundColor(Color::srgba(1.0, 1.0, 0.3, 0.0)),
+                                        TutorialHighlight { kind: HighlightKind::Gauge },
+                                    ));
+
+                                    // Single gauge node from the grid
+                                    single_gauge_wrapper.spawn(gauge_grid(font.clone()));
+                                });
                         });
 
                     // Sliders (right bottom)
@@ -324,22 +348,23 @@ fn setup_tutorial_scene(
                     ..default()
                 })
                 .with_children(|right_panel| {
-                    // UraneK Sprite
+                    // UraneK Sprite - start with greet pose
                     right_panel.spawn((
-                        ImageNode {
-                            image: uranek_texture.clone(),
-                            texture_atlas: Some(TextureAtlas {
-                                layout: texture_atlas_layout.clone(),
-                                index: 0,
-                            }),
-                            ..default()
-                        },
+                        ImageNode::new(uranek_greet.clone()),
                         Node {
                             width: Val::Px(256.0),
                             height: Val::Px(256.0),
                             ..default()
                         },
                         UranekSprite,
+                        UranekAnimationState::default(),
+                        // Store handles as children via components on the same entity
+                        UraneKTextures {
+                            greet: uranek_greet.clone(),
+                            idle_0: uranek_idle_0.clone(),
+                            idle_1: uranek_idle_1.clone(),
+                            talk: uranek_talk.clone(),
+                        },
                     ));
 
                     // Speech Bubble
@@ -426,11 +451,11 @@ fn update_tutorial_ui(
     };
 
     let new_text = match tutorial_state.step_index {
-        0 => "Cześć! Jestem URANEK.\n\nPracuję jako operator reaktora już od 12 godzin bez kawy.\nTy będziesz mi pomagać, zanim przeróbimy się na żarówkę świetlną.",
+        0 => "Cześć! Jestem URANEK.\n\nPracuję jako operator reaktora już od 12 godzin bez przerwy.\nTy będziesz mi pomagać, zanim przerobimy się na żarówkę świetlną.",
         1 => "Najpierw REAKTOR.\n\nTutaj grzeje się paliwo. Zbyt zimny reaktor = zero kasy.\nZa gorący = grill all-inclusive.",
-        2 => "Ten okrągły wskaźnik to temperatura REAKTORA.\n\nTrzymaj ją raczej w zielono-żółtej strefie.",
-        3 => "A to TURBINA.\n\nOna robi z gorącej wody pieniądze. Za zimna - nie kręci. Za gorąca - kręci się ostatni raz.",
-        4 => "Suwak REAKTYWNOŚCI (po prawej) steruje, jak mocno reaktor się rozgrzewa.\n\nW grze będziesz nim delikatnie kręcić.",
+        2 => "Ten pierwszy okrągły wskaźnik to temperatura REAKTORA.\n\nTrzymaj ją raczej w zielono-żółtej strefie.",
+        3 => "Ten drugi wskaźnik to TURBINA.\n\nOna robi z gorącej wody pieniądze. Za zimna - nie kręci. Za gorąca - kręci się ostatni raz.",
+        4 => "Suwak REAKTYWNOŚCI steruje, jak mocno reaktor się rozgrzewa.\n\nW grze będziesz nim delikatnie kręcić.",
         5 => "Suwak TURBINY reguluje przepływ.\n\nWięcej przepływu = więcej mocy, ale też cieplejsza turbina.",
         6 => "I to tyle z teorii! Teraz przejdziemy do prawdziwej zmiany.\n\nNaciśnij [SPACJA], żeby odpalić prawdziwy reaktor.",
         _ => "Gotowy na prawdziwy reaktor?",
@@ -438,27 +463,47 @@ fn update_tutorial_ui(
 
     **text = new_text.to_string();
 }
+
 fn update_uranek_animation(
     tutorial_state: Res<TutorialState>,
     time: Res<Time>,
-    mut uranek_query: Query<&mut ImageNode, With<UranekSprite>>,
+    mut uranek_query: Query<(&mut ImageNode, &mut UranekAnimationState, &UraneKTextures), With<UranekSprite>>,
 ) {
-    let mut uranek_iter = uranek_query.iter_mut();
-    let Some(mut image_node) = uranek_iter.next() else {
+    let Ok((mut image_node, mut anim, textures)) = uranek_query.single_mut() else {
         return;
     };
 
-    // Animate uranek sprite based on tutorial state
-    let frame = ((time.elapsed_secs() * 2.0) as usize) % 2;
-    
-    if let Some(ref mut atlas) = image_node.texture_atlas {
-        atlas.index = match tutorial_state.step_index {
-            0 => frame, // Idle animation (frames 0-1)
-            1..=6 => 2 + frame, // Talking animation (frames 2-3)
-            _ => 0,
-        };
+    let step = tutorial_state.step_index;
+
+    // Step 0: greet pose
+    if step == 0 {
+        image_node.image = textures.greet.clone();
+        anim.timer = Timer::from_seconds(8.0, TimerMode::Repeating);
+        anim.current_idle = false;
+        return;
     }
+
+    // Steps 1..=6: talking pose
+    if (1..=6).contains(&step) {
+        image_node.image = textures.talk.clone();
+        anim.timer = Timer::from_seconds(8.0, TimerMode::Repeating);
+        anim.current_idle = false;
+        return;
+    }
+
+    // After tutorial text (idle loop): alternate idle_0 and idle_1 every 8 seconds
+    anim.timer.tick(time.delta());
+    if anim.timer.is_finished() {
+        anim.current_idle = !anim.current_idle;
+    }
+
+    image_node.image = if anim.current_idle {
+        textures.idle_1.clone()
+    } else {
+        textures.idle_0.clone()
+    };
 }
+
 fn update_highlight_box(
     tutorial_state: Res<TutorialState>,
     time: Res<Time>,
@@ -472,8 +517,11 @@ fn update_highlight_box(
 
     for (mut bg, mut border, highlight) in highlight_q.iter_mut() {
         let active = match (step, &highlight.kind) {
-            (1 | 2 | 3, HighlightKind::Gauge) => true,
+            // Gauges: glow only while he explicitly talks about the reactor & turbine gauges
+            (2 | 3, HighlightKind::Gauge) => true,
+            // Reactivity slider: when he explains the reactivity control
             (4, HighlightKind::Reactivity) => true,
+            // Turbine slider: when he explains the turbine control
             (5, HighlightKind::Turbine) => true,
             _ => false,
         };
