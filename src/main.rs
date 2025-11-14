@@ -13,6 +13,7 @@ pub enum GameState {
     #[default]
     MainMenu,
     InGame,
+    Paused,
     Credits,
     GameOver,
 }

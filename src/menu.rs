@@ -2,12 +2,6 @@ use bevy::prelude::*;
 use crate::GameState;
 
 #[derive(Component)]
-pub struct MainMenuUI;
-
-#[derive(Component)]
-pub struct MenuCamera;
-
-#[derive(Component)]
 pub struct PlayButton;
 
 #[derive(Component)]
@@ -17,14 +11,10 @@ pub struct QuitButton;
 pub struct CreditsButton;
 
 #[derive(Component)]
-pub struct CreditsUI;
-
-#[derive(Component)]
 pub struct BackButton;
 
 pub fn main_menu_plugin(app: &mut App) {
     app.add_systems(OnEnter(GameState::MainMenu), setup_main_menu)
-        .add_systems(OnExit(GameState::MainMenu), cleanup_main_menu)
         .add_systems(
             Update,
             (
@@ -36,7 +26,6 @@ pub fn main_menu_plugin(app: &mut App) {
                 .run_if(in_state(GameState::MainMenu)),
         )
         .add_systems(OnEnter(GameState::Credits), setup_credits)
-        .add_systems(OnExit(GameState::Credits), cleanup_credits)
         .add_systems(
             Update,
             (button_system, handle_back_button).run_if(in_state(GameState::Credits)),
@@ -44,8 +33,9 @@ pub fn main_menu_plugin(app: &mut App) {
 }
 
 fn setup_main_menu(mut commands: Commands, _asset_server: Res<AssetServer>) {
-    commands.spawn((Camera2d, MenuCamera));
+    commands.spawn((Camera2d, DespawnOnExit(GameState::MainMenu)));
     commands.spawn((
+        DespawnOnExit(GameState::MainMenu),
         Node {
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
@@ -55,7 +45,6 @@ fn setup_main_menu(mut commands: Commands, _asset_server: Res<AssetServer>) {
             ..default()
         },
         BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.75)),
-        MainMenuUI,
     ))
     .with_children(|parent| {
         parent.spawn((
@@ -147,23 +136,11 @@ fn setup_main_menu(mut commands: Commands, _asset_server: Res<AssetServer>) {
     });
 }
 
-fn cleanup_main_menu(
-    mut commands: Commands,
-    ui_query: Query<Entity, With<MainMenuUI>>,
-    camera_query: Query<Entity, With<MenuCamera>>,
-) {
-    for entity in ui_query.iter() {
-        commands.entity(entity).despawn();
-    }
-    for entity in camera_query.iter() {
-        commands.entity(entity).despawn();
-    }
-}
-
 fn setup_credits(mut commands: Commands) {
-    commands.spawn((Camera2d, MenuCamera));
+    commands.spawn((Camera2d, DespawnOnExit(GameState::Credits)));
     commands
         .spawn((
+            DespawnOnExit(GameState::Credits),
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
@@ -173,7 +150,6 @@ fn setup_credits(mut commands: Commands) {
                 ..default()
             },
             BackgroundColor(Color::BLACK),
-            CreditsUI,
         ))
         .with_children(|parent| {
             parent.spawn((
@@ -225,19 +201,6 @@ fn setup_credits(mut commands: Commands) {
                     ));
                 });
         });
-}
-
-fn cleanup_credits(
-    mut commands: Commands,
-    ui_query: Query<Entity, With<CreditsUI>>,
-    camera_query: Query<Entity, With<MenuCamera>>,
-) {
-    for entity in ui_query.iter() {
-        commands.entity(entity).despawn();
-    }
-    for entity in camera_query.iter() {
-        commands.entity(entity).despawn();
-    }
 }
 
 #[allow(clippy::type_complexity)]
