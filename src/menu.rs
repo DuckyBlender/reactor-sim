@@ -11,6 +11,9 @@ pub struct QuitButton;
 pub struct CreditsButton;
 
 #[derive(Component)]
+pub struct TutorialButton;
+
+#[derive(Component)]
 pub struct BackButton;
 
 pub fn main_menu_plugin(app: &mut App) {
@@ -75,7 +78,7 @@ fn setup_main_menu(mut commands: Commands) {
             ))
             .with_children(|parent| {
                 parent.spawn((
-                    Text::new("Play"),
+                    Text::new("Endless Mode"),
                     TextFont {
                         font_size: 24.0,
                         ..default()
@@ -84,6 +87,28 @@ fn setup_main_menu(mut commands: Commands) {
                 ));
             });
 
+        parent.spawn((
+            Button,
+            Node {
+                width: Val::Px(200.0),
+                height: Val::Px(60.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                margin: UiRect::all(Val::Px(10.0)),
+                ..default()
+            },
+            BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
+            TutorialButton,
+        )).with_children(|parent| {
+            parent.spawn((
+                Text::new("Tutorial"),
+                TextFont {
+                    font_size: 24.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+            ));
+        });
         parent
             .spawn((
                 Button,
