@@ -23,7 +23,13 @@ pub enum GameState {
 fn main() {
     let mut app = App::new();
     app.add_plugins((
-        DefaultPlugins,
+        DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                mode: bevy::window::WindowMode::Fullscreen(MonitorSelection::Primary, VideoModeSelection::Current),
+                ..default()
+            }),
+            ..default()
+        }),
         UiWidgetsPlugins,
         InputDispatchPlugin,
         TabNavigationPlugin,
