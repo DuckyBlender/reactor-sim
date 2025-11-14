@@ -8,7 +8,7 @@ use bevy::{
 use crate::{GameState, simulation::{ControlSettings, GameOverReason, EnvironmentState}};
 
 mod indicators;
-mod sliders;
+pub mod sliders;
 
 #[derive(Component)]
 struct GameOverReasonText;
@@ -36,6 +36,10 @@ impl Plugin for ReactorUiPlugin {
                     sliders::sync_slider_values,
                     sliders::update_slider_visuals.after(sliders::sync_slider_values),
                     sliders::update_slider_value_text,
+                )
+            )
+            .add_systems(Update, 
+                (
                     sliders::spin_turbine_icon,
                     indicators::update_indicators,
                     indicators::update_gauge_colors,
@@ -336,4 +340,3 @@ fn setup_game_over_ui(
         ],
     ));
 }
-
