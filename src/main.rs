@@ -24,13 +24,7 @@ pub enum GameState {
 fn main() {
     let mut app = App::new();
     app.add_plugins((
-        DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                mode: bevy::window::WindowMode::Fullscreen(MonitorSelection::Primary, VideoModeSelection::Current),
-                ..default()
-            }),
-            ..default()
-        }),
+        DefaultPlugins,
         UiWidgetsPlugins,
         InputDispatchPlugin,
         TabNavigationPlugin,
@@ -38,8 +32,8 @@ fn main() {
         ui::ReactorUiPlugin,
         sound::AudioPlugin,
         model::Reactor3dPlugin,
+        menu::main_menu_plugin,
     ))
     .init_state::<GameState>();
-    menu::main_menu_plugin(&mut app);
     app.run();
 }

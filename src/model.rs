@@ -35,9 +35,6 @@ impl Plugin for Reactor3dPlugin {
 }
 
 #[derive(Component)]
-struct GameScene;
-
-#[derive(Component)]
 struct ParallaxCamera;
 
 #[derive(Component)]
@@ -68,7 +65,7 @@ fn setup_3d_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
         Transform::from_xyz(CAMERA_BASE_POS.x, CAMERA_BASE_POS.y, CAMERA_BASE_POS.z)
             .looking_at(CAMERA_LOOK_AT, Vec3::Y),
         ParallaxCamera,
-        GameScene,
+        DespawnOnExit(GameState::InGame),
     ));
 
     commands.spawn((
@@ -82,12 +79,12 @@ fn setup_3d_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..default()
         }
         .build(),
-        GameScene,
+        DespawnOnExit(GameState::InGame),
     ));
 
     commands.spawn((
         SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset("models/reactor.glb"))),
-        GameScene,
+        DespawnOnExit(GameState::InGame),
     ));
 }
 
