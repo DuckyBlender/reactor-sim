@@ -10,7 +10,7 @@ use crate::{
     simulation::{ControlSettings, EnvironmentState, GameOverReason},
 };
 
-mod indicators;
+pub mod indicators;
 pub mod sliders;
 
 #[derive(Component)]

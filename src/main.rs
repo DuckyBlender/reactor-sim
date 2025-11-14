@@ -8,6 +8,7 @@ mod menu;
 mod model;
 mod simulation;
 mod sound;
+mod tutorial;
 mod ui;
 
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
@@ -18,6 +19,7 @@ pub enum GameState {
     Paused,
     Credits,
     GameOver,
+    Tutorial,
     Settings,
 }
 
@@ -31,6 +33,7 @@ fn main() {
         simulation::SimulationPlugin,
         ui::ReactorUiPlugin,
         sound::AudioPlugin,
+        tutorial::TutorialPlugin,
         model::Reactor3dPlugin,
         menu::main_menu_plugin,
     ))
