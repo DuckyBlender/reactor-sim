@@ -27,4 +27,3 @@ fn main() {
         .init_state::<GameState>()
         .run();
 }
-

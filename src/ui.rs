@@ -245,23 +245,23 @@ fn gauge_grid(font: Handle<Font>) -> impl Bundle {
         children![
             gauge(
                 "Temperatura (Reaktor)",
-                "700°C",
+                "0°C",
                 ReactorTempIndicator,
                 font.clone()
             ),
             gauge(
                 "Ciśnienie (Reaktor)",
-                "120 RPM",
+                "0 bar",
                 ReactorPressureIndicator,
                 font.clone()
             ),
             gauge(
                 "Temperatura (Turbina)",
-                "350°C",
+                "0°C",
                 TurbineTempIndicator,
                 font.clone()
             ),
-            gauge("Promieniowanie", "3 Rad", RadiationIndicator, font.clone()),
+            gauge("Promieniowanie", "0 mSv/h", RadiationIndicator, font.clone()),
         ],
     )
 }
@@ -318,7 +318,12 @@ fn gauge(
     )
 }
 
-fn slider_panel(reactivity_value: f32, turbine_value: f32, font: Handle<Font>, asset_server: &AssetServer) -> impl Bundle {
+fn slider_panel(
+    reactivity_value: f32,
+    turbine_value: f32,
+    font: Handle<Font>,
+    asset_server: &AssetServer,
+) -> impl Bundle {
     (
         Node {
             flex_direction: FlexDirection::Column,
@@ -480,19 +485,22 @@ fn sync_slider_values(
     if controls.is_changed() {
         for (entity, value) in reactivity_sliders.iter() {
             if value.0 != controls.reactivity_target {
-                info!("Syncing reactivity slider value from {} to {}", value.0, controls.reactivity_target);
-                commands.entity(entity).insert(SliderValue(controls.reactivity_target));
+                commands
+                    .entity(entity)
+                    .insert(SliderValue(controls.reactivity_target));
             }
         }
         for (entity, value) in turbine_sliders.iter() {
             if value.0 != controls.turbine_target {
-                info!("Syncing turbine slider value from {} to {}", value.0, controls.turbine_target);
-                commands.entity(entity).insert(SliderValue(controls.turbine_target));
+                commands
+                    .entity(entity)
+                    .insert(SliderValue(controls.turbine_target));
             }
         }
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn update_slider_visuals(
     sliders: Query<
         (
@@ -517,17 +525,26 @@ fn update_slider_visuals(
         ),
     >,
     children: Query<&Children>,
-    mut thumbs: Query<(&mut Node, &mut BackgroundColor, Has<SliderThumbVisual>), Without<ReactorSlider>>,
+    mut thumbs: Query<
+        (&mut Node, &mut BackgroundColor, Has<SliderThumbVisual>),
+        Without<ReactorSlider>,
+    >,
 ) {
-    for (slider_ent, value, range, hovered, drag_state, disabled, is_reactivity, is_turbine) in sliders.iter() {
-        let slider_type = if is_reactivity { "Reactivity" } else if is_turbine { "Turbine" } else { "Unknown" };
-        info!("Update {} slider visuals - value: {}, position: {}", slider_type, value.0, range.thumb_position(value.0));
+    for (slider_ent, value, range, hovered, drag_state, disabled, is_reactivity, is_turbine) in
+        sliders.iter()
+    {
+        let slider_type = if is_reactivity {
+            "Reactivity"
+        } else if is_turbine {
+            "Turbine"
+        } else {
+            "Unknown"
+        };
         for child in children.iter_descendants(slider_ent) {
             if let Ok((mut thumb_node, mut thumb_bg, is_thumb)) = thumbs.get_mut(child)
                 && is_thumb
             {
                 let new_pos = Val::Percent(range.thumb_position(value.0) * 100.0);
-                info!("Setting {} thumb left to: {:?}", slider_type, new_pos);
                 thumb_node.left = new_pos;
 
                 let is_active = hovered.0 || drag_state.dragging;
