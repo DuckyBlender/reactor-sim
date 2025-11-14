@@ -1,12 +1,9 @@
-use bevy::{
-    input_focus::tab_navigation::TabGroup,
-    prelude::*,
-};
+use bevy::{input_focus::tab_navigation::TabGroup, prelude::*};
 
 use crate::{GameState, simulation::ControlSettings};
 
 mod indicators;
-mod sliders;
+pub mod sliders;
 
 #[derive(Component)]
 struct GameOverBanner;
@@ -29,9 +26,11 @@ impl Plugin for ReactorUiPlugin {
                     sliders::sync_slider_values,
                     sliders::update_slider_visuals.after(sliders::sync_slider_values),
                     sliders::update_slider_value_text,
-                    indicators::update_indicators,
-                    update_game_over_overlay,
-                )
+                ),
+            )
+            .add_systems(
+                Update,
+                (indicators::update_indicators, update_game_over_overlay)
                     .run_if(in_state(GameState::InGame).or(in_state(GameState::GameOver))),
             );
     }
@@ -169,4 +168,3 @@ fn update_game_over_overlay(
         };
     }
 }
-

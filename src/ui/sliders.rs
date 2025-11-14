@@ -33,7 +33,7 @@ pub struct ReactivityValueText;
 #[derive(Component)]
 pub struct TurbineValueText;
 
-pub fn base_slider(initial_value: f32) -> impl Bundle {
+pub fn base_slider(initial_value: f32, max: f32) -> impl Bundle {
     (
         Node {
             display: Display::Flex,
@@ -52,7 +52,7 @@ pub fn base_slider(initial_value: f32) -> impl Bundle {
             track_click: TrackClick::Snap,
         },
         SliderValue(initial_value),
-        SliderRange::new(0.0, 100.0),
+        SliderRange::new(0.0, max),
         TabIndex(0),
         Children::spawn((
             Spawn((
@@ -227,7 +227,7 @@ pub fn slider_panel(
 pub fn create_reactivity_slider(initial_value: f32) -> impl Bundle {
     (
         ReactivitySlider,
-        base_slider(initial_value),
+        base_slider(initial_value, 100.0),
         observe(
             |value_change: On<ValueChange<f32>>, mut controls: ResMut<ControlSettings>| {
                 controls.reactivity_target = value_change.value;
@@ -239,7 +239,7 @@ pub fn create_reactivity_slider(initial_value: f32) -> impl Bundle {
 pub fn create_turbine_slider(initial_value: f32) -> impl Bundle {
     (
         TurbineSlider,
-        base_slider(initial_value),
+        base_slider(initial_value, 100.0),
         observe(
             |value_change: On<ValueChange<f32>>, mut controls: ResMut<ControlSettings>| {
                 controls.turbine_target = value_change.value;
@@ -300,9 +300,7 @@ pub fn update_slider_visuals(
         Without<ReactorSlider>,
     >,
 ) {
-    for (slider_ent, value, range, hovered, drag_state, disabled) in
-        sliders.iter()
-    {
+    for (slider_ent, value, range, hovered, drag_state, disabled) in sliders.iter() {
         for child in children.iter_descendants(slider_ent) {
             if let Ok((mut thumb_node, mut thumb_bg, is_thumb)) = thumbs.get_mut(child)
                 && is_thumb
@@ -340,4 +338,3 @@ pub fn update_slider_value_text(
         **text = format!("{}%", controls.turbine_target as i32);
     }
 }
-
