@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::GameState;
+use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct PlayButton;
@@ -37,128 +37,131 @@ pub fn main_menu_plugin(app: &mut App) {
 
 fn setup_main_menu(mut commands: Commands) {
     commands.spawn((Camera2d, DespawnOnExit(GameState::MainMenu)));
-    commands.spawn((
-        DespawnOnExit(GameState::MainMenu),
-        Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            align_items: AlignItems::Center,
-            justify_content: JustifyContent::Center,
-            flex_direction: FlexDirection::Column,
-            ..default()
-        },
-        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.75)),
-    ))
-    .with_children(|parent| {
-        parent.spawn((
-            Text::new("Reactor Simulator"),
-            TextFont {
-                font_size: 64.0,
-                ..default()
-            },
-            TextColor(Color::WHITE),
+    commands
+        .spawn((
+            DespawnOnExit(GameState::MainMenu),
             Node {
-                margin: UiRect::all(Val::Px(20.0)),
-                ..default()
-            },
-        ));
-        parent
-            .spawn((
-                Button,
-                Node {
-                    width: Val::Px(200.0),
-                    height: Val::Px(60.0),
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    margin: UiRect::all(Val::Px(10.0)),
-                    ..default()
-                },
-                BackgroundColor(Color::srgb(0.25, 0.75, 0.25)),
-                PlayButton,
-            ))
-            .with_children(|parent| {
-                parent.spawn((
-                    Text::new("Endless Mode"),
-                    TextFont {
-                        font_size: 24.0,
-                        ..default()
-                    },
-                    TextColor(Color::WHITE),
-                ));
-            });
-
-        parent.spawn((
-            Button,
-            Node {
-                width: Val::Px(200.0),
-                height: Val::Px(60.0),
-                justify_content: JustifyContent::Center,
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
                 align_items: AlignItems::Center,
-                margin: UiRect::all(Val::Px(10.0)),
+                justify_content: JustifyContent::Center,
+                flex_direction: FlexDirection::Column,
                 ..default()
             },
-            BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
-            TutorialButton,
-        )).with_children(|parent| {
+            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.75)),
+        ))
+        .with_children(|parent| {
             parent.spawn((
-                Text::new("Tutorial"),
+                Text::new("Reactor Simulator"),
                 TextFont {
-                    font_size: 24.0,
+                    font_size: 64.0,
                     ..default()
                 },
                 TextColor(Color::WHITE),
+                Node {
+                    margin: UiRect::all(Val::Px(20.0)),
+                    ..default()
+                },
             ));
-        });
-        parent
-            .spawn((
-                Button,
-                Node {
-                    width: Val::Px(200.0),
-                    height: Val::Px(60.0),
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    margin: UiRect::all(Val::Px(10.0)),
-                    ..default()
-                },
-                BackgroundColor(Color::srgb(0.00, 0.00, 0.5)),
-                CreditsButton,
-            ))
-            .with_children(|parent| {
-                parent.spawn((
-                    Text::new("Credits"),
-                    TextFont {
-                        font_size: 24.0,
+            parent
+                .spawn((
+                    Button,
+                    Node {
+                        width: Val::Px(200.0),
+                        height: Val::Px(60.0),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        margin: UiRect::all(Val::Px(10.0)),
                         ..default()
                     },
-                    TextColor(Color::WHITE),
-                ));
-            });
+                    BackgroundColor(Color::srgb(0.25, 0.75, 0.25)),
+                    PlayButton,
+                ))
+                .with_children(|parent| {
+                    parent.spawn((
+                        Text::new("Endless Mode"),
+                        TextFont {
+                            font_size: 24.0,
+                            ..default()
+                        },
+                        TextColor(Color::WHITE),
+                    ));
+                });
 
-        parent
-            .spawn((
-                Button,
-                Node {
-                    width: Val::Px(200.0),
-                    height: Val::Px(60.0),
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    margin: UiRect::all(Val::Px(10.0)),
-                    ..default()
-                },
-                BackgroundColor(Color::srgb(0.75, 0.25, 0.25)),
-                QuitButton,
-            ))
-            .with_children(|parent| {
-                parent.spawn((
-                    Text::new("Quit"),
-                    TextFont {
-                        font_size: 24.0,
+            parent
+                .spawn((
+                    Button,
+                    Node {
+                        width: Val::Px(200.0),
+                        height: Val::Px(60.0),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        margin: UiRect::all(Val::Px(10.0)),
                         ..default()
                     },
-                    TextColor(Color::WHITE),
-                ));
-            });
-    });
+                    BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
+                    TutorialButton,
+                ))
+                .with_children(|parent| {
+                    parent.spawn((
+                        Text::new("Tutorial"),
+                        TextFont {
+                            font_size: 24.0,
+                            ..default()
+                        },
+                        TextColor(Color::WHITE),
+                    ));
+                });
+            parent
+                .spawn((
+                    Button,
+                    Node {
+                        width: Val::Px(200.0),
+                        height: Val::Px(60.0),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        margin: UiRect::all(Val::Px(10.0)),
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgb(0.00, 0.00, 0.5)),
+                    CreditsButton,
+                ))
+                .with_children(|parent| {
+                    parent.spawn((
+                        Text::new("Credits"),
+                        TextFont {
+                            font_size: 24.0,
+                            ..default()
+                        },
+                        TextColor(Color::WHITE),
+                    ));
+                });
+
+            parent
+                .spawn((
+                    Button,
+                    Node {
+                        width: Val::Px(200.0),
+                        height: Val::Px(60.0),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        margin: UiRect::all(Val::Px(10.0)),
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgb(0.75, 0.25, 0.25)),
+                    QuitButton,
+                ))
+                .with_children(|parent| {
+                    parent.spawn((
+                        Text::new("Quit"),
+                        TextFont {
+                            font_size: 24.0,
+                            ..default()
+                        },
+                        TextColor(Color::WHITE),
+                    ));
+                });
+        });
 }
 
 fn setup_credits(mut commands: Commands) {
@@ -315,4 +318,3 @@ fn handle_back_button(
         }
     }
 }
-

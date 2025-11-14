@@ -108,7 +108,7 @@ mod game {
         prelude::*,
     };
 
-    use super::{DisplayQuality, GameState, Volume, TEXT_COLOR};
+    use super::{DisplayQuality, GameState, TEXT_COLOR, Volume};
 
     // This plugin will contain the game. In this case, it's just be a screen that will
     // display the current settings for 5 seconds before returning to the menu
@@ -224,7 +224,7 @@ mod menu {
         prelude::*,
     };
 
-    use super::{DisplayQuality, GameState, Volume, TEXT_COLOR};
+    use super::{DisplayQuality, GameState, TEXT_COLOR, Volume};
 
     // This plugin manages the menu, with 5 different screens:
     // - a main menu with "New Game", "Settings", "Quit"

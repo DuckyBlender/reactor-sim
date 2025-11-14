@@ -1,10 +1,21 @@
 use bevy::{
-    prelude::*,
     picking::hover::Hovered,
-    ui_widgets::{Button, observe, Activate},
+    prelude::*,
+    ui_widgets::{Activate, Button, observe},
 };
 
-use crate::simulation::{EnvironmentState, ReactorState, TurbineState, REACTOR_TEMP_LIMIT, TURBINE_TEMP_LIMIT};
+use crate::simulation::{
+    EnvironmentState, REACTOR_TEMP_LIMIT, ReactorState, TURBINE_TEMP_LIMIT, TurbineState,
+};
+
+const GAUGE_SIZE: f32 = 75.0;
+const GAUGE_BORDER: f32 = 6.0;
+const GAUGE_TITLE_FONT_SIZE: f32 = 10.0;
+const GAUGE_VALUE_FONT_SIZE: f32 = 14.0;
+const GAUGE_DURABILITY_FONT_SIZE: f32 = 9.0;
+const GAUGE_CONTAINER_GAP: f32 = 6.0;
+const GAUGE_GRID_GAP: f32 = 18.0;
+const GAUGE_GRID_PADDING: f32 = 12.0;
 
 #[derive(Component)]
 pub struct ReactorTempIndicator;
@@ -49,13 +60,13 @@ pub fn gauge_grid(font: Handle<Font>) -> impl Bundle {
             display: Display::Grid,
             grid_template_columns: vec![GridTrack::auto(), GridTrack::auto()],
             grid_template_rows: vec![GridTrack::auto(), GridTrack::auto()],
-            column_gap: Val::Px(30.0),
-            row_gap: Val::Px(30.0),
-            padding: UiRect::all(Val::Px(20.0)),
+            column_gap: Val::Px(GAUGE_GRID_GAP),
+            row_gap: Val::Px(GAUGE_GRID_GAP),
+            padding: UiRect::all(Val::Px(GAUGE_GRID_PADDING)),
             ..default()
         },
         BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.5)),
-        BorderRadius::all(Val::Px(10.0)),
+        BorderRadius::all(Val::Px(6.0)),
         children![
             gauge(
                 "Temperatura Reaktora",
@@ -72,7 +83,13 @@ pub fn gauge_grid(font: Handle<Font>) -> impl Bundle {
                 font.clone()
             ),
             turbine_gauge(font.clone()),
-            gauge("Moc", "0 MW", PowerIndicator, GaugeType::Power, font.clone()),
+            gauge(
+                "Moc",
+                "0 MW",
+                PowerIndicator,
+                GaugeType::Power,
+                font.clone()
+            ),
         ],
     )
 }
@@ -82,7 +99,7 @@ fn turbine_gauge(font: Handle<Font>) -> impl Bundle {
         Node {
             flex_direction: FlexDirection::Column,
             align_items: AlignItems::Center,
-            row_gap: Val::Px(10.0),
+            row_gap: Val::Px(GAUGE_CONTAINER_GAP),
             ..default()
         },
         TurbineGaugeContainer,
@@ -92,7 +109,7 @@ fn turbine_gauge(font: Handle<Font>) -> impl Bundle {
                 Text::new("Temperatura Turbiny"),
                 TextFont {
                     font: font.clone(),
-                    font_size: 14.0,
+                    font_size: GAUGE_TITLE_FONT_SIZE,
                     ..default()
                 },
                 TextColor(Color::srgb(0.7, 0.7, 0.7)),
@@ -100,9 +117,9 @@ fn turbine_gauge(font: Handle<Font>) -> impl Bundle {
             // Gauge visual
             (
                 Node {
-                    width: Val::Px(100.0),
-                    height: Val::Px(100.0),
-                    border: UiRect::all(Val::Px(8.0)),
+                    width: Val::Px(GAUGE_SIZE),
+                    height: Val::Px(GAUGE_SIZE),
+                    border: UiRect::all(Val::Px(GAUGE_BORDER)),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
                     flex_direction: FlexDirection::Column,
@@ -111,14 +128,16 @@ fn turbine_gauge(font: Handle<Font>) -> impl Bundle {
                 BorderRadius::MAX,
                 BorderColor::all(Color::srgb(0.2, 0.8, 0.2)),
                 BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.3)),
-                GaugeBorder { gauge_type: GaugeType::TurbineTemp },
+                GaugeBorder {
+                    gauge_type: GaugeType::TurbineTemp
+                },
                 BlinkTimer(Timer::from_seconds(0.5, TimerMode::Repeating)),
                 children![
                     (
                         Text::new("0°C"),
                         TextFont {
                             font: font.clone(),
-                            font_size: 18.0,
+                            font_size: GAUGE_VALUE_FONT_SIZE,
                             ..default()
                         },
                         TextColor(Color::WHITE),
@@ -128,7 +147,7 @@ fn turbine_gauge(font: Handle<Font>) -> impl Bundle {
                         Text::new("100%"),
                         TextFont {
                             font: font.clone(),
-                            font_size: 12.0,
+                            font_size: GAUGE_DURABILITY_FONT_SIZE,
                             ..default()
                         },
                         TextColor(Color::srgb(0.7, 0.7, 0.7)),
@@ -151,7 +170,7 @@ fn gauge(
         Node {
             flex_direction: FlexDirection::Column,
             align_items: AlignItems::Center,
-            row_gap: Val::Px(10.0),
+            row_gap: Val::Px(GAUGE_CONTAINER_GAP),
             ..default()
         },
         children![
@@ -160,7 +179,7 @@ fn gauge(
                 Text::new(title),
                 TextFont {
                     font: font.clone(),
-                    font_size: 14.0,
+                    font_size: GAUGE_TITLE_FONT_SIZE,
                     ..default()
                 },
                 TextColor(Color::srgb(0.7, 0.7, 0.7)),
@@ -168,9 +187,9 @@ fn gauge(
             // Gauge visual (simplified circle)
             (
                 Node {
-                    width: Val::Px(100.0),
-                    height: Val::Px(100.0),
-                    border: UiRect::all(Val::Px(8.0)),
+                    width: Val::Px(GAUGE_SIZE),
+                    height: Val::Px(GAUGE_SIZE),
+                    border: UiRect::all(Val::Px(GAUGE_BORDER)),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
                     ..default()
@@ -184,7 +203,7 @@ fn gauge(
                     Text::new(initial_value),
                     TextFont {
                         font: font.clone(),
-                        font_size: 18.0,
+                        font_size: GAUGE_VALUE_FONT_SIZE,
                         ..default()
                     },
                     TextColor(Color::WHITE),
@@ -234,7 +253,7 @@ pub fn update_indicators(
             **text = format!("{:.0} MW", environment.power_generated);
         }
     }
-    
+
     // Update turbine durability text
     for entity in durability_texts.iter() {
         if let Ok(mut text) = texts.get_mut(entity) {
@@ -256,16 +275,16 @@ pub fn update_gauge_colors(
             border_color.set_all(Color::srgb(0.2, 0.8, 0.2));
             continue;
         }
-        
+
         let (current_value, limit) = match gauge_border.gauge_type {
             GaugeType::ReactorTemp => (reactor.temperature, REACTOR_TEMP_LIMIT),
             GaugeType::ReactorPressure => (reactor.pressure, 160.0), // bar
             GaugeType::TurbineTemp => (turbine.temperature, TURBINE_TEMP_LIMIT),
             GaugeType::Power => (environment.power_generated, 1000.0), // Max power (unused)
         };
-        
+
         let percentage = current_value / limit;
-        
+
         let color = if percentage >= 0.95 {
             // Black/transparent zone (95-100%)
             // Fade from red to black
@@ -278,14 +297,15 @@ pub fn update_gauge_colors(
         } else if percentage >= 0.80 {
             // Red zone with blinking (80-95%)
             blink_timer.0.tick(time.delta());
-            let visible = (blink_timer.0.elapsed_secs() / blink_timer.0.duration().as_secs_f32()) % 1.0 < 0.5;
-            
+            let visible =
+                (blink_timer.0.elapsed_secs() / blink_timer.0.duration().as_secs_f32()) % 1.0 < 0.5;
+
             // Fade from yellow to red
             let fade = ((percentage - 0.80) / 0.15).clamp(0.0, 1.0);
             let red = 0.9;
             let green = 0.9 * (1.0 - fade) + 0.1 * fade;
             let blue = 0.1;
-            
+
             if visible {
                 Color::srgb(red, green, blue)
             } else {
@@ -303,7 +323,7 @@ pub fn update_gauge_colors(
             // Green zone (0-60%)
             Color::srgb(0.2, 0.8, 0.2)
         };
-        
+
         border_color.set_all(color);
     }
 }
@@ -319,24 +339,24 @@ pub fn handle_turbine_destroyed(
     if !turbine.is_changed() {
         return;
     }
-    
+
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
-    
+
     for container_entity in turbine_container.iter() {
         // Find the gauge border child
         if let Ok(container_children) = children.get(container_entity) {
             for child in container_children.iter() {
-                if let Ok((gauge_entity, gauge_border)) = gauge_borders.get(child) 
-                    && gauge_border.gauge_type == GaugeType::TurbineTemp 
-                    && turbine.is_destroyed 
+                if let Ok((gauge_entity, gauge_border)) = gauge_borders.get(child)
+                    && gauge_border.gauge_type == GaugeType::TurbineTemp
+                    && turbine.is_destroyed
                 {
                     // Replace gauge with buy-back button
                     commands.entity(gauge_entity).despawn();
                     commands.entity(container_entity).with_child((
                                 Node {
-                                    width: Val::Px(100.0),
-                                    height: Val::Px(100.0),
-                                    border: UiRect::all(Val::Px(5.0)),
+                                    width: Val::Px(GAUGE_SIZE),
+                                    height: Val::Px(GAUGE_SIZE),
+                                    border: UiRect::all(Val::Px(GAUGE_BORDER - 2.0)),
                                     justify_content: JustifyContent::Center,
                                     align_items: AlignItems::Center,
                                     flex_direction: FlexDirection::Column,
@@ -363,7 +383,7 @@ pub fn handle_turbine_destroyed(
                                     Text::new("Buy Back\n$200"),
                                     TextFont {
                                         font: font.clone(),
-                                        font_size: 14.0,
+                                        font_size: GAUGE_TITLE_FONT_SIZE,
                                         ..default()
                                     },
                                     TextColor(Color::srgb(0.9, 0.9, 0.9)),
@@ -387,19 +407,19 @@ pub fn rebuild_turbine_gauge_from_buyback(
     }
 
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
-    
+
     // Check if buyback button exists
     for button_entity in buyback_buttons.iter() {
         // Despawn the buyback button
         commands.entity(button_entity).despawn();
-        
+
         // Add the gauge back
         for container_entity in turbine_container.iter() {
             commands.entity(container_entity).with_child((
                 Node {
-                    width: Val::Px(100.0),
-                    height: Val::Px(100.0),
-                    border: UiRect::all(Val::Px(8.0)),
+                    width: Val::Px(GAUGE_SIZE),
+                    height: Val::Px(GAUGE_SIZE),
+                    border: UiRect::all(Val::Px(GAUGE_BORDER)),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
                     flex_direction: FlexDirection::Column,
@@ -408,14 +428,16 @@ pub fn rebuild_turbine_gauge_from_buyback(
                 BorderRadius::MAX,
                 BorderColor::all(Color::srgb(0.2, 0.8, 0.2)),
                 BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.3)),
-                GaugeBorder { gauge_type: GaugeType::TurbineTemp },
+                GaugeBorder {
+                    gauge_type: GaugeType::TurbineTemp,
+                },
                 BlinkTimer(Timer::from_seconds(0.5, TimerMode::Repeating)),
                 children![
                     (
                         Text::new("0°C"),
                         TextFont {
                             font: font.clone(),
-                            font_size: 18.0,
+                            font_size: GAUGE_VALUE_FONT_SIZE,
                             ..default()
                         },
                         TextColor(Color::WHITE),
@@ -425,7 +447,7 @@ pub fn rebuild_turbine_gauge_from_buyback(
                         Text::new("100%"),
                         TextFont {
                             font: font.clone(),
-                            font_size: 12.0,
+                            font_size: GAUGE_DURABILITY_FONT_SIZE,
                             ..default()
                         },
                         TextColor(Color::srgb(0.7, 0.7, 0.7)),
@@ -436,4 +458,3 @@ pub fn rebuild_turbine_gauge_from_buyback(
         }
     }
 }
-

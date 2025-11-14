@@ -15,6 +15,20 @@ pub const SLIDER_TRACK: Color = Color::srgb(0.18, 0.2, 0.26);
 pub const SLIDER_THUMB: Color = Color::srgb(0.95, 0.55, 0.2);
 pub const SLIDER_THUMB_HOVERED: Color = Color::srgb(1.0, 0.65, 0.3);
 
+const SLIDER_HEIGHT: f32 = 12.0;
+const SLIDER_TRACK_HEIGHT: f32 = 5.0;
+const SLIDER_THUMB_SIZE: f32 = 10.0;
+const SLIDER_RIGHT_MARGIN: f32 = 10.0;
+const SLIDER_PANEL_ROW_GAP: f32 = 24.0;
+const SLIDER_PANEL_PADDING: f32 = 12.0;
+const SLIDER_ROW_GAP: f32 = 12.0;
+const SLIDER_CONTAINER_WIDTH: f32 = 180.0;
+const SLIDER_TITLE_FONT_SIZE: f32 = 10.0;
+const SLIDER_VALUE_FONT_SIZE: f32 = 12.0;
+const SLIDER_INTERNAL_FONT_SIZE: f32 = 7.0;
+const SLIDER_ICON_SIZE: f32 = 29.0;
+const SLIDER_VALUE_WIDTH: f32 = 36.0;
+
 #[derive(Component)]
 pub struct ReactorSlider;
 
@@ -34,6 +48,12 @@ pub struct ReactivityValueText;
 pub struct TurbineValueText;
 
 #[derive(Component)]
+pub struct ReactivityAppliedText;
+
+#[derive(Component)]
+pub struct TurbineAppliedText;
+
+#[derive(Component)]
 pub struct TurbineIcon;
 
 pub fn base_slider(initial_value: f32) -> impl Bundle {
@@ -44,7 +64,7 @@ pub fn base_slider(initial_value: f32) -> impl Bundle {
             justify_content: JustifyContent::Center,
             align_items: AlignItems::Stretch,
             justify_items: JustifyItems::Center,
-            height: Val::Px(20.0),
+            height: Val::Px(SLIDER_HEIGHT),
             width: Val::Percent(100.0),
             ..default()
         },
@@ -60,18 +80,18 @@ pub fn base_slider(initial_value: f32) -> impl Bundle {
         Children::spawn((
             Spawn((
                 Node {
-                    height: Val::Px(8.0),
+                    height: Val::Px(SLIDER_TRACK_HEIGHT),
                     ..default()
                 },
                 BackgroundColor(SLIDER_TRACK),
-                BorderRadius::all(Val::Px(4.0)),
+                BorderRadius::all(Val::Px(SLIDER_TRACK_HEIGHT / 2.0)),
             )),
             Spawn((
                 Node {
                     display: Display::Flex,
                     position_type: PositionType::Absolute,
                     left: Val::Px(0.0),
-                    right: Val::Px(16.0),
+                    right: Val::Px(SLIDER_RIGHT_MARGIN),
                     top: Val::Px(0.0),
                     bottom: Val::Px(0.0),
                     ..default()
@@ -81,8 +101,8 @@ pub fn base_slider(initial_value: f32) -> impl Bundle {
                     SliderThumbVisual,
                     Node {
                         display: Display::Flex,
-                        width: Val::Px(16.0),
-                        height: Val::Px(16.0),
+                        width: Val::Px(SLIDER_THUMB_SIZE),
+                        height: Val::Px(SLIDER_THUMB_SIZE),
                         position_type: PositionType::Absolute,
                         left: Val::Percent(0.0),
                         ..default()
@@ -104,18 +124,18 @@ pub fn slider_panel(
     (
         Node {
             flex_direction: FlexDirection::Column,
-            row_gap: Val::Px(40.0),
-            padding: UiRect::all(Val::Px(20.0)),
+            row_gap: Val::Px(SLIDER_PANEL_ROW_GAP),
+            padding: UiRect::all(Val::Px(SLIDER_PANEL_PADDING)),
             ..default()
         },
         BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.5)),
-        BorderRadius::all(Val::Px(10.0)),
+        BorderRadius::all(Val::Px(6.0)),
         children![
             // Reactivity slider
             (
                 Node {
                     flex_direction: FlexDirection::Row,
-                    column_gap: Val::Px(20.0),
+                    column_gap: Val::Px(SLIDER_ROW_GAP),
                     align_items: AlignItems::Center,
                     ..default()
                 },
@@ -123,8 +143,8 @@ pub fn slider_panel(
                     // Nuclear icon
                     (
                         Node {
-                            width: Val::Px(48.0),
-                            height: Val::Px(48.0),
+                            width: Val::Px(SLIDER_ICON_SIZE),
+                            height: Val::Px(SLIDER_ICON_SIZE),
                             ..default()
                         },
                         ImageNode::new(asset_server.load("imgs/nuclear.png")),
@@ -133,8 +153,8 @@ pub fn slider_panel(
                     (
                         Node {
                             flex_direction: FlexDirection::Column,
-                            row_gap: Val::Px(8.0),
-                            width: Val::Px(300.0),
+                            row_gap: Val::Px(5.0),
+                            width: Val::Px(SLIDER_CONTAINER_WIDTH),
                             ..default()
                         },
                         children![
@@ -142,12 +162,22 @@ pub fn slider_panel(
                                 Text::new("Reaktywność"),
                                 TextFont {
                                     font: font.clone(),
-                                    font_size: 16.0,
+                                    font_size: SLIDER_TITLE_FONT_SIZE,
                                     ..default()
                                 },
                                 TextColor(Color::srgb(0.9, 0.9, 0.9)),
                             ),
                             create_reactivity_slider(reactivity_value),
+                            (
+                                Text::new(format!("Internal: {}%", reactivity_value as i32)),
+                                TextFont {
+                                    font: font.clone(),
+                                    font_size: SLIDER_INTERNAL_FONT_SIZE,
+                                    ..default()
+                                },
+                                TextColor(Color::srgba(0.7, 0.7, 0.7, 0.8)),
+                                ReactivityAppliedText,
+                            ),
                         ],
                     ),
                     // Value display
@@ -155,13 +185,13 @@ pub fn slider_panel(
                         Text::new(format!("{}%", reactivity_value as i32)),
                         TextFont {
                             font: font.clone(),
-                            font_size: 20.0,
+                            font_size: SLIDER_VALUE_FONT_SIZE,
                             ..default()
                         },
                         TextColor(Color::srgb(0.9, 0.9, 0.9)),
                         ReactivityValueText,
                         Node {
-                            width: Val::Px(60.0),
+                            width: Val::Px(SLIDER_VALUE_WIDTH),
                             justify_content: JustifyContent::End,
                             ..default()
                         },
@@ -172,7 +202,7 @@ pub fn slider_panel(
             (
                 Node {
                     flex_direction: FlexDirection::Row,
-                    column_gap: Val::Px(20.0),
+                    column_gap: Val::Px(SLIDER_ROW_GAP),
                     align_items: AlignItems::Center,
                     ..default()
                 },
@@ -180,8 +210,8 @@ pub fn slider_panel(
                     // Turbine icon (spinning)
                     (
                         Node {
-                            width: Val::Px(48.0),
-                            height: Val::Px(48.0),
+                            width: Val::Px(SLIDER_ICON_SIZE),
+                            height: Val::Px(SLIDER_ICON_SIZE),
                             ..default()
                         },
                         ImageNode::new(asset_server.load("imgs/turbine.png")),
@@ -192,8 +222,8 @@ pub fn slider_panel(
                     (
                         Node {
                             flex_direction: FlexDirection::Column,
-                            row_gap: Val::Px(8.0),
-                            width: Val::Px(300.0),
+                            row_gap: Val::Px(5.0),
+                            width: Val::Px(SLIDER_CONTAINER_WIDTH),
                             ..default()
                         },
                         children![
@@ -201,12 +231,22 @@ pub fn slider_panel(
                                 Text::new("Prędkość Transferu"),
                                 TextFont {
                                     font: font.clone(),
-                                    font_size: 16.0,
+                                    font_size: SLIDER_TITLE_FONT_SIZE,
                                     ..default()
                                 },
                                 TextColor(Color::srgb(0.9, 0.9, 0.9)),
                             ),
                             create_turbine_slider(turbine_value),
+                            (
+                                Text::new(format!("Internal: {}%", turbine_value as i32)),
+                                TextFont {
+                                    font: font.clone(),
+                                    font_size: SLIDER_INTERNAL_FONT_SIZE,
+                                    ..default()
+                                },
+                                TextColor(Color::srgba(0.7, 0.7, 0.7, 0.8)),
+                                TurbineAppliedText,
+                            ),
                         ],
                     ),
                     // Value display
@@ -214,13 +254,13 @@ pub fn slider_panel(
                         Text::new(format!("{}%", turbine_value as i32)),
                         TextFont {
                             font: font.clone(),
-                            font_size: 20.0,
+                            font_size: SLIDER_VALUE_FONT_SIZE,
                             ..default()
                         },
                         TextColor(Color::srgb(0.9, 0.9, 0.9)),
                         TurbineValueText,
                         Node {
-                            width: Val::Px(60.0),
+                            width: Val::Px(SLIDER_VALUE_WIDTH),
                             justify_content: JustifyContent::End,
                             ..default()
                         },
@@ -307,9 +347,7 @@ pub fn update_slider_visuals(
         Without<ReactorSlider>,
     >,
 ) {
-    for (slider_ent, value, range, hovered, drag_state, disabled) in
-        sliders.iter()
-    {
+    for (slider_ent, value, range, hovered, drag_state, disabled) in sliders.iter() {
         for child in children.iter_descendants(slider_ent) {
             if let Ok((mut thumb_node, mut thumb_bg, is_thumb)) = thumbs.get_mut(child)
                 && is_thumb
@@ -348,6 +386,30 @@ pub fn update_slider_value_text(
     }
 }
 
+pub fn update_applied_value_text(
+    controls: Res<ControlSettings>,
+    mut reactivity_applied_texts: Query<
+        &mut Text,
+        (With<ReactivityAppliedText>, Without<TurbineAppliedText>),
+    >,
+    mut turbine_applied_texts: Query<
+        &mut Text,
+        (With<TurbineAppliedText>, Without<ReactivityAppliedText>),
+    >,
+) {
+    if !controls.is_changed() {
+        return;
+    }
+
+    for mut text in reactivity_applied_texts.iter_mut() {
+        **text = format!("Internal: {:.1}%", controls.reactivity_applied);
+    }
+
+    for mut text in turbine_applied_texts.iter_mut() {
+        **text = format!("Internal: {:.1}%", controls.turbine_applied);
+    }
+}
+
 pub fn spin_turbine_icon(
     controls: Res<ControlSettings>,
     mut turbine_icons: Query<&mut Transform, With<TurbineIcon>>,
@@ -355,9 +417,8 @@ pub fn spin_turbine_icon(
 ) {
     let rotation_speed = (controls.turbine_applied / 100.0) * 3.0; // 0-3 radians per second
     let delta = time.delta_secs();
-    
+
     for mut transform in turbine_icons.iter_mut() {
         transform.rotate_z(rotation_speed * delta);
     }
 }
-
