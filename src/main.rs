@@ -18,6 +18,7 @@ pub enum GameState {
     Paused,
     Credits,
     GameOver,
+    Settings,
 }
 
 fn main() {
