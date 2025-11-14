@@ -33,6 +33,9 @@ pub struct ReactivityValueText;
 #[derive(Component)]
 pub struct TurbineValueText;
 
+#[derive(Component)]
+pub struct TurbineIcon;
+
 pub fn base_slider(initial_value: f32, max: f32) -> impl Bundle {
     (
         Node {
@@ -172,7 +175,7 @@ pub fn slider_panel(
                     ..default()
                 },
                 children![
-                    // Turbine icon
+                    // Turbine icon (spinning)
                     (
                         Node {
                             width: Val::Px(48.0),
@@ -180,6 +183,8 @@ pub fn slider_panel(
                             ..default()
                         },
                         ImageNode::new(asset_server.load("imgs/turbine.png")),
+                        Transform::default(),
+                        TurbineIcon,
                     ),
                     // Slider container
                     (
@@ -191,7 +196,7 @@ pub fn slider_panel(
                         },
                         children![
                             (
-                                Text::new("Moc Turbiny"),
+                                Text::new("Prędkość Transferu"),
                                 TextFont {
                                     font: font.clone(),
                                     font_size: 16.0,
@@ -338,3 +343,17 @@ pub fn update_slider_value_text(
         **text = format!("{}%", controls.turbine_target as i32);
     }
 }
+
+pub fn spin_turbine_icon(
+    controls: Res<ControlSettings>,
+    mut turbine_icons: Query<&mut Transform, With<TurbineIcon>>,
+    time: Res<Time>,
+) {
+    let rotation_speed = (controls.turbine_applied / 100.0) * 3.0; // 0-3 radians per second
+    let delta = time.delta_secs();
+    
+    for mut transform in turbine_icons.iter_mut() {
+        transform.rotate_z(rotation_speed * delta);
+    }
+}
+
