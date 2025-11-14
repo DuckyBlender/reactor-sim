@@ -174,10 +174,7 @@ fn handle_unpause_input(
     }
 }
 
-fn setup_pause_menu(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
+fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2d);
 
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
@@ -193,7 +190,7 @@ fn setup_pause_menu(
             ..default()
         },
         BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.7)),
-        Transform::default() ,
+        Transform::default(),
         GlobalTransform::default(),
         PauseMenu,
         children![

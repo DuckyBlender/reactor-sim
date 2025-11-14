@@ -26,7 +26,7 @@ impl Plugin for AudioPlugin {
             .add_systems(
                 Update,
                 update_audio_volume.run_if(in_state(GameState::InGame)),
-            );    
+            );
     }
 }
 

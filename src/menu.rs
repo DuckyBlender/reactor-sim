@@ -189,7 +189,8 @@ fn setup_main_menu(mut commands: Commands) {
 
 fn setup_credits(mut commands: Commands) {
     commands.spawn((Camera2d, DespawnOnExit(GameState::Credits)));
-    commands.spawn((
+    commands
+        .spawn((
             DespawnOnExit(GameState::Credits),
             Node {
                 width: Val::Percent(100.0),
