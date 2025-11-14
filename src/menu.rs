@@ -47,7 +47,8 @@ pub fn main_menu_plugin(app: &mut App) {
         .add_systems(OnEnter(GameState::Credits), setup_credits)
         .add_systems(
             Update,
-            (button_system, handle_back_button).run_if(in_state(GameState::Credits).or(in_state(GameState::Settings))),
+            (button_system, handle_back_button)
+                .run_if(in_state(GameState::Credits).or(in_state(GameState::Settings))),
         )
         .add_systems(OnEnter(GameState::Settings), setup_settings)
         .add_systems(
@@ -443,40 +444,44 @@ fn setup_settings(
                         },
                     ));
 
-                    parent.spawn(Node {
+                    parent
+                        .spawn(Node {
                             flex_direction: FlexDirection::Row,
                             column_gap: Val::Px(12.0),
                             ..default()
-                        }).with_children(|parent| {
-                        parent.spawn(create_volume_slider(settings.volume));
-                        parent.spawn((
-                            Text::new(format!("{}%", (settings.volume * 100.0) as u8)),
-                            VolumeText
-                        ));
-                    });
+                        })
+                        .with_children(|parent| {
+                            parent.spawn(create_volume_slider(settings.volume));
+                            parent.spawn((
+                                Text::new(format!("{}%", (settings.volume * 100.0) as u8)),
+                                VolumeText,
+                            ));
+                        });
 
-                    parent.spawn((
-                        Button,
-                        Node {
-                            width: Val::Px(150.0),
-                            height: Val::Px(50.0),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            margin: UiRect::all(Val::Px(20.0)),
-                            ..default()
-                        },
-                        BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
-                        BackButton,
-                    )).with_children(|parent| {
-                    parent.spawn((
-                        Text::new("Back"),
-                        TextFont {
-                            font_size: 24.0,
-                            ..default()
-                        },
-                        TextColor(Color::WHITE),
-                    ));
-                });
+                    parent
+                        .spawn((
+                            Button,
+                            Node {
+                                width: Val::Px(150.0),
+                                height: Val::Px(50.0),
+                                justify_content: JustifyContent::Center,
+                                align_items: AlignItems::Center,
+                                margin: UiRect::all(Val::Px(20.0)),
+                                ..default()
+                            },
+                            BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
+                            BackButton,
+                        ))
+                        .with_children(|parent| {
+                            parent.spawn((
+                                Text::new("Back"),
+                                TextFont {
+                                    font_size: 24.0,
+                                    ..default()
+                                },
+                                TextColor(Color::WHITE),
+                            ));
+                        });
                 });
         });
 }

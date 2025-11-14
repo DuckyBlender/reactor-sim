@@ -39,10 +39,11 @@ impl Plugin for ReactorUiPlugin {
                     sliders::sync_slider_values,
                     sliders::update_slider_visuals.after(sliders::sync_slider_values),
                     sliders::update_slider_value_text,
-                    sliders::update_applied_value_text
-                )
+                    sliders::update_applied_value_text,
+                ),
             )
-            .add_systems(Update, 
+            .add_systems(
+                Update,
                 (
                     sliders::spin_turbine_icon,
                     indicators::update_indicators,
