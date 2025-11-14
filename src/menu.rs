@@ -5,12 +5,6 @@ use bevy::{
 };
 
 #[derive(Component)]
-pub struct MainMenuUI;
-
-#[derive(Component)]
-pub struct MenuCamera;
-
-#[derive(Component)]
 pub struct PlayButton;
 
 #[derive(Component)]
@@ -20,7 +14,7 @@ pub struct QuitButton;
 pub struct CreditsButton;
 
 #[derive(Component)]
-pub struct CreditsUI;
+pub struct TutorialButton;
 
 #[derive(Component)]
 pub struct BackButton;
@@ -39,7 +33,6 @@ pub struct VolumeText;
 
 pub fn main_menu_plugin(app: &mut App) {
     app.add_systems(OnEnter(GameState::MainMenu), setup_main_menu)
-        .add_systems(OnExit(GameState::MainMenu), cleanup_main_menu)
         .add_systems(
             Update,
             (
@@ -52,13 +45,11 @@ pub fn main_menu_plugin(app: &mut App) {
                 .run_if(in_state(GameState::MainMenu)),
         )
         .add_systems(OnEnter(GameState::Credits), setup_credits)
-        .add_systems(OnExit(GameState::Credits), cleanup_credits)
         .add_systems(
             Update,
             (button_system, handle_back_button).run_if(in_state(GameState::Credits).or(in_state(GameState::Settings))),
         )
         .add_systems(OnEnter(GameState::Settings), setup_settings)
-        .add_systems(OnExit(GameState::Settings), cleanup_settings)
         .add_systems(
             Update,
             sync_volume_slider.run_if(in_state(GameState::Settings)),
@@ -66,153 +57,163 @@ pub fn main_menu_plugin(app: &mut App) {
         .add_systems(Update, update_volume_text);
 }
 
-fn setup_main_menu(mut commands: Commands, _asset_server: Res<AssetServer>) {
-    commands.spawn((Camera2d, MenuCamera));
-    commands
-        .spawn((
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                flex_direction: FlexDirection::Column,
+fn setup_main_menu(mut commands: Commands) {
+    commands.spawn((Camera2d, DespawnOnExit(GameState::MainMenu)));
+    commands.spawn((
+        DespawnOnExit(GameState::MainMenu),
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.75)),
+    ))
+    .with_children(|parent| {
+        parent.spawn((
+            Text::new("Reactor Simulator"),
+            TextFont {
+                font_size: 64.0,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.75)),
-            MainMenuUI,
-        ))
-        .with_children(|parent| {
+            TextColor(Color::WHITE),
+            Node {
+                margin: UiRect::all(Val::Px(20.0)),
+                ..default()
+            },
+        ));
+        parent
+            .spawn((
+                Button,
+                Node {
+                    width: Val::Px(200.0),
+                    height: Val::Px(60.0),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    margin: UiRect::all(Val::Px(10.0)),
+                    ..default()
+                },
+                BackgroundColor(Color::srgb(0.25, 0.75, 0.25)),
+                PlayButton,
+            ))
+            .with_children(|parent| {
+                parent.spawn((
+                    Text::new("Endless Mode"),
+                    TextFont {
+                        font_size: 24.0,
+                        ..default()
+                    },
+                    TextColor(Color::WHITE),
+                ));
+            });
+
+        parent.spawn((
+            Button,
+            Node {
+                width: Val::Px(200.0),
+                height: Val::Px(60.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                margin: UiRect::all(Val::Px(10.0)),
+                ..default()
+            },
+            BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
+            TutorialButton,
+        )).with_children(|parent| {
             parent.spawn((
-                Text::new("Reactor Simulator"),
+                Text::new("Tutorial"),
                 TextFont {
-                    font_size: 64.0,
+                    font_size: 24.0,
                     ..default()
                 },
                 TextColor(Color::WHITE),
+            ));
+        });
+        parent
+            .spawn((
+                Button,
                 Node {
-                    margin: UiRect::all(Val::Px(20.0)),
+                    width: Val::Px(200.0),
+                    height: Val::Px(60.0),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    margin: UiRect::all(Val::Px(10.0)),
                     ..default()
                 },
-            ));
-            parent
-                .spawn((
-                    Button,
-                    Node {
-                        width: Val::Px(200.0),
-                        height: Val::Px(60.0),
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        margin: UiRect::all(Val::Px(10.0)),
+                BackgroundColor(Color::srgb(0.00, 0.00, 0.5)),
+                CreditsButton,
+            ))
+            .with_children(|parent| {
+                parent.spawn((
+                    Text::new("Credits"),
+                    TextFont {
+                        font_size: 24.0,
                         ..default()
                     },
-                    BackgroundColor(Color::srgb(0.25, 0.75, 0.25)),
-                    PlayButton,
-                ))
-                .with_children(|parent| {
-                    parent.spawn((
-                        Text::new("Play"),
-                        TextFont {
-                            font_size: 24.0,
-                            ..default()
-                        },
-                        TextColor(Color::WHITE),
-                    ));
-                });
+                    TextColor(Color::WHITE),
+                ));
+            });
 
-            parent
-                .spawn((
-                    Button,
-                    Node {
-                        width: Val::Px(200.0),
-                        height: Val::Px(60.0),
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        margin: UiRect::all(Val::Px(10.0)),
+        parent
+            .spawn((
+                Button,
+                Node {
+                    width: Val::Px(200.0),
+                    height: Val::Px(60.0),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    margin: UiRect::all(Val::Px(10.0)),
+                    ..default()
+                },
+                BackgroundColor(Color::srgb(0.00, 0.00, 0.5)),
+                SettingsButton,
+            ))
+            .with_children(|parent| {
+                parent.spawn((
+                    Text::new("Settings"),
+                    TextFont {
+                        font_size: 24.0,
                         ..default()
                     },
-                    BackgroundColor(Color::srgb(0.00, 0.00, 0.5)),
-                    CreditsButton,
-                ))
-                .with_children(|parent| {
-                    parent.spawn((
-                        Text::new("Credits"),
-                        TextFont {
-                            font_size: 24.0,
-                            ..default()
-                        },
-                        TextColor(Color::WHITE),
-                    ));
-                });
+                    TextColor(Color::WHITE),
+                ));
+            });
 
-            parent
-                .spawn((
-                    Button,
-                    Node {
-                        width: Val::Px(200.0),
-                        height: Val::Px(60.0),
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        margin: UiRect::all(Val::Px(10.0)),
+        parent
+            .spawn((
+                Button,
+                Node {
+                    width: Val::Px(200.0),
+                    height: Val::Px(60.0),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    margin: UiRect::all(Val::Px(10.0)),
+                    ..default()
+                },
+                BackgroundColor(Color::srgb(0.75, 0.25, 0.25)),
+                QuitButton,
+            ))
+            .with_children(|parent| {
+                parent.spawn((
+                    Text::new("Quit"),
+                    TextFont {
+                        font_size: 24.0,
                         ..default()
                     },
-                    BackgroundColor(Color::srgb(0.00, 0.00, 0.5)),
-                    SettingsButton,
-                ))
-                .with_children(|parent| {
-                    parent.spawn((
-                        Text::new("Settings"),
-                        TextFont {
-                            font_size: 24.0,
-                            ..default()
-                        },
-                        TextColor(Color::WHITE),
-                    ));
-                });
-
-            parent
-                .spawn((
-                    Button,
-                    Node {
-                        width: Val::Px(200.0),
-                        height: Val::Px(60.0),
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        margin: UiRect::all(Val::Px(10.0)),
-                        ..default()
-                    },
-                    BackgroundColor(Color::srgb(0.75, 0.25, 0.25)),
-                    QuitButton,
-                ))
-                .with_children(|parent| {
-                    parent.spawn((
-                        Text::new("Quit"),
-                        TextFont {
-                            font_size: 24.0,
-                            ..default()
-                        },
-                        TextColor(Color::WHITE),
-                    ));
-                });
-        });
+                    TextColor(Color::WHITE),
+                ));
+            });
+    });
 }
 
-fn cleanup_main_menu(
-    mut commands: Commands,
-    ui_query: Query<Entity, With<MainMenuUI>>,
-    camera_query: Query<Entity, With<MenuCamera>>,
-) {
-    for entity in ui_query.iter() {
-        commands.entity(entity).despawn();
-    }
-    for entity in camera_query.iter() {
-        commands.entity(entity).despawn();
-    }
-}
 
 fn setup_credits(mut commands: Commands) {
-    commands.spawn((Camera2d, MenuCamera));
+    commands.spawn((Camera2d, DespawnOnExit(GameState::Credits)));
     commands
         .spawn((
+            DespawnOnExit(GameState::Credits),
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
@@ -222,13 +223,20 @@ fn setup_credits(mut commands: Commands) {
                 ..default()
             },
             BackgroundColor(Color::BLACK),
-            CreditsUI,
         ))
         .with_children(|parent| {
             parent.spawn((
                 Text::new(
                     "
-            Credits here (fill in in the end)
+                Reactor Simulator
+
+                Autorzy:
+
+                Kacper Sowinski - Project Manager, Developer
+                Alan Klas - Lead Developer, Code Reviewer, 
+                Mateusz Oskar Kmiec - Developer, Sound & Visual Designer,
+                Ignacy Stykiel - Developer, Sound & Visual Designer
+                
                 ",
                 ),
                 TextFont {
@@ -266,19 +274,6 @@ fn setup_credits(mut commands: Commands) {
                     ));
                 });
         });
-}
-
-fn cleanup_credits(
-    mut commands: Commands,
-    ui_query: Query<Entity, With<CreditsUI>>,
-    camera_query: Query<Entity, With<MenuCamera>>,
-) {
-    for entity in ui_query.iter() {
-        commands.entity(entity).despawn();
-    }
-    for entity in camera_query.iter() {
-        commands.entity(entity).despawn();
-    }
 }
 
 #[allow(clippy::type_complexity)]
@@ -426,9 +421,10 @@ fn setup_settings(
     asset_server: Res<AssetServer>,
     settings: Res<AudioSettings>,
 ) {
-    commands.spawn((Camera2d, MenuCamera));
+    commands.spawn((Camera2d, DespawnOnExit(GameState::Settings)));
     commands
         .spawn((
+            DespawnOnExit(GameState::Settings),
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
@@ -506,17 +502,4 @@ fn setup_settings(
                 });
                 });
         });
-}
-
-fn cleanup_settings(
-    mut commands: Commands,
-    ui_query: Query<Entity, With<SettingsUI>>,
-    camera_query: Query<Entity, With<MenuCamera>>,
-) {
-    for entity in ui_query.iter() {
-        commands.entity(entity).despawn();
-    }
-    for entity in camera_query.iter() {
-        commands.entity(entity).despawn();
-    }
 }
