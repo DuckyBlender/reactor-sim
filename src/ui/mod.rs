@@ -447,9 +447,9 @@ fn update_uranek_idle_animation(
 ) {
     let now = time.elapsed_secs();
 
-    // Parametry mrugania: co kilka sekund krótkie mrugnięcie na 1 sekundę
-    let interval = 8.0; // odstęp między mrugnięciami (oczy otwarte)
-    let blink_duration = 1.0; // czas "zamkniętych" oczu
+    // Blink parameters: every few seconds a short blink for 1 second
+    let interval = 8.0; // interval between blinks (eyes open)
+    let blink_duration = 1.0; // time of 'closed' eyes
 
     if state.blink_frame == 1 {
         // Faza mrugnięcia – po sekundzie wracamy do podstawowej klatki
