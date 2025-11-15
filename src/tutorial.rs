@@ -1,7 +1,7 @@
 use crate::{
     GameState,
     simulation::{ControlSettings, EnvironmentState, ReactorState, TurbineState},
-    ui::indicators::gauge_grid,
+    ui::{indicators::gauge_grid, PauseState},
 };
 use bevy::prelude::*;
 use rand::Rng;
@@ -17,6 +17,7 @@ impl Plugin for TutorialPlugin {
                 Update,
                 (
                     advance_tutorial_on_space,
+                    handle_tutorial_escape,
                     update_tutorial_ui,
                     update_highlight_box,
                     update_uranek_animation,
@@ -397,7 +398,7 @@ fn setup_tutorial_scene(mut commands: Commands, asset_server: Res<AssetServer>) 
 
                     // Help text
                     right_panel.spawn((
-                        Text::new("[SPACJA] - dalej"),
+                        Text::new("[SPACJA] - dalej\n[ESC] - powrót do menu"),
                         TextFont {
                             font: font.clone(),
                             font_size: 16.0,
@@ -445,6 +446,18 @@ fn advance_tutorial_on_space(
     // Exit after final step
     if tutorial_state.step_index > 6 {
         next_state.set(GameState::InGame);
+    }
+}
+
+fn handle_tutorial_escape(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut next_state: ResMut<NextState<GameState>>,
+    current_state: Res<State<GameState>>,
+    mut pause_state: ResMut<PauseState>,
+) {
+    if keyboard.just_pressed(KeyCode::Escape) {
+        pause_state.previous_state = Some(*current_state.get());
+        next_state.set(GameState::Paused);
     }
 }
 
