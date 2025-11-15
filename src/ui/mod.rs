@@ -466,7 +466,7 @@ fn update_uranek_idle_animation(
         return;
     }
 
-    // Oczy otwarte – sprawdzamy czy minął pełny interwał do kolejnego mrugnięcia
+    // Eyes open – we check if the full interval to the next blink has passed
     if now - state.last_blink_time >= interval {
         state.last_blink_time = now;
         state.blink_frame = 1;
