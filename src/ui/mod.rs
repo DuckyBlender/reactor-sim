@@ -107,6 +107,7 @@ fn setup_game_ui(
     mut uranek_state: ResMut<UranekState>,
     time: Res<Time>,
 ) {
+    *uranek_state = UranekState::default();
     uranek_state.last_default_text_time = time.elapsed_secs();
 
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
