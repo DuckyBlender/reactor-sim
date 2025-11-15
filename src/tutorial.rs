@@ -1,9 +1,9 @@
-use bevy::prelude::*;
 use crate::{
     GameState,
-    simulation::{ControlSettings, ReactorState, TurbineState, EnvironmentState},
+    simulation::{ControlSettings, EnvironmentState, ReactorState, TurbineState},
     ui::indicators::gauge_grid,
 };
+use bevy::prelude::*;
 
 
 
@@ -11,8 +11,7 @@ pub struct TutorialPlugin;
 
 impl Plugin for TutorialPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_systems(OnEnter(GameState::Tutorial), setup_tutorial_scene)
+        app.add_systems(OnEnter(GameState::Tutorial), setup_tutorial_scene)
             .add_systems(
                 Update,
                 (
@@ -70,9 +69,6 @@ struct TutorialTurbineSliderMarker;
 #[derive(Component)]
 struct TutorialGaugeGridMarker;
 
-#[derive(Component)]
-struct DespawnOnExit;
-
 // New: highlight components for tutorial focus frames
 #[derive(Component)]
 struct TutorialHighlight {
@@ -85,10 +81,7 @@ enum HighlightKind {
     Turbine,
 }
 
-fn setup_tutorial_scene(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
+fn setup_tutorial_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
     // Reset game state
     commands.insert_resource(ControlSettings::default());
     commands.insert_resource(ReactorState::default());
@@ -312,7 +305,7 @@ fn setup_tutorial_scene(
                                     })
                                     .with_children(|slider_container| {
                                         slider_container.spawn((
-                                            Text::new("Prędkość Transferu"),
+                                            Text::new("Prędkość Turbiny"),
                                             TextFont {
                                                 font: font.clone(),
                                                 font_size: 16.0,
@@ -418,16 +411,6 @@ fn setup_tutorial_scene(
     // Remove old pointer arrow entity entirely (no longer needed)
 }
 
-fn teardown_tutorial_scene(
-    mut commands: Commands,
-    query: Query<Entity, With<DespawnOnExit>>,
-) {
-    for entity in query.iter() {
-        commands.entity(entity).despawn();
-    }
-    commands.remove_resource::<TutorialState>();
-}
-
 fn advance_tutorial_on_space(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut tutorial_state: ResMut<TutorialState>,
@@ -478,13 +461,27 @@ fn update_tutorial_ui(
     };
 
     let new_text = match tutorial_state.step_index {
-        0 => "Cześć! Jestem URANEK.\n\nPracuję jako operator reaktora już od 12 godzin bez przerwy.\nTy będziesz mi pomagać, zanim przerobimy się na żarówkę świetlną.",
-        1 => "Najpierw REAKTOR.\n\nTutaj grzeje się paliwo. Zbyt zimny reaktor = zero kasy.\nZa gorący = grill all-inclusive.",
-        2 => "Ten pierwszy okrągły wskaźnik to temperatura REAKTORA.\n\nTrzymaj ją raczej w zielono-żółtej strefie.",
-        3 => "Ten drugi wskaźnik to TURBINA.\n\nOna robi z gorącej wody pieniądze. Za zimna - nie kręci. Za gorąca - kręci się ostatni raz.",
-        4 => "Suwak REAKTYWNOŚCI steruje, jak mocno reaktor się rozgrzewa.\n\nW grze będziesz nim delikatnie kręcić.",
-        5 => "Suwak TURBINY reguluje przepływ.\n\nWięcej przepływu = więcej mocy, ale też cieplejsza turbina.",
-        6 => "I to tyle z teorii! Teraz przejdziemy do prawdziwej zmiany.\n\nNaciśnij [SPACJA], żeby odpalić prawdziwy reaktor.",
+        0 => {
+            "Cześć! Jestem URANEK.\n\nPracuję jako operator reaktora już od 12 godzin bez przerwy.\nTy będziesz mi pomagać, zanim przerobimy się na żarówkę świetlną."
+        }
+        1 => {
+            "Najpierw REAKTOR.\n\nTutaj grzeje się paliwo. Zbyt zimny reaktor = zero kasy.\nZa gorący = grill all-inclusive."
+        }
+        2 => {
+            "Ten pierwszy okrągły wskaźnik to temperatura REAKTORA.\n\nTrzymaj ją raczej w zielono-żółtej strefie."
+        }
+        3 => {
+            "Ten drugi wskaźnik to TURBINA.\n\nOna robi z gorącej wody pieniądze. Za zimna - nie kręci. Za gorąca - kręci się ostatni raz."
+        }
+        4 => {
+            "Suwak REAKTYWNOŚCI steruje, jak mocno reaktor się rozgrzewa.\n\nW grze będziesz nim delikatnie kręcić."
+        }
+        5 => {
+            "Suwak TURBINY reguluje przepływ.\n\nWięcej przepływu = więcej mocy, ale też cieplejsza turbina."
+        }
+        6 => {
+            "I to tyle z teorii! Teraz przejdziemy do prawdziwej zmiany.\n\nNaciśnij [SPACJA], żeby odpalić prawdziwy reaktor."
+        }
         _ => "Gotowy na prawdziwy reaktor?",
     };
 
@@ -494,7 +491,10 @@ fn update_tutorial_ui(
 fn update_uranek_animation(
     tutorial_state: Res<TutorialState>,
     time: Res<Time>,
-    mut uranek_query: Query<(&mut ImageNode, &mut UranekAnimationState, &UraneKTextures), With<UranekSprite>>,
+    mut uranek_query: Query<
+        (&mut ImageNode, &mut UranekAnimationState, &UraneKTextures),
+        With<UranekSprite>,
+    >,
 ) {
     let Ok((mut image_node, mut anim, textures)) = uranek_query.single_mut() else {
         return;
@@ -563,7 +563,11 @@ fn update_highlight_box(
             _ => false,
         };
 
-        let (fill_a, border_a) = if active { (alpha, border_alpha) } else { (0.0, 0.0) };
+        let (fill_a, border_a) = if active {
+            (alpha, border_alpha)
+        } else {
+            (0.0, 0.0)
+        };
 
         *bg = BackgroundColor(Color::srgba(1.0, 1.0, 0.3, fill_a));
         border.top = Color::srgba(1.0, 1.0, 0.3, border_a);
@@ -572,8 +576,3 @@ fn update_highlight_box(
         border.left = Color::srgba(1.0, 1.0, 0.3, border_a);
     }
 }
-
-
-
-
-

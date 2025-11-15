@@ -76,7 +76,7 @@ fn setup_main_menu(mut commands: Commands) {
         ))
         .with_children(|parent| {
             parent.spawn((
-                Text::new("Reactor Simulator"),
+                Text::new("Symulator Reaktora z Urankiem"),
                 TextFont {
                     font_size: 64.0,
                     ..default()
@@ -123,7 +123,7 @@ fn setup_main_menu(mut commands: Commands) {
                         margin: UiRect::all(Val::Px(10.0)),
                         ..default()
                     },
-                    BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
+                    BackgroundColor(Color::srgb(0.2, 0.4, 0.8)),
                     TutorialButton,
                 ))
                 .with_children(|parent| {
@@ -136,6 +136,32 @@ fn setup_main_menu(mut commands: Commands) {
                         TextColor(Color::WHITE),
                     ));
                 });
+
+            parent
+                .spawn((
+                    Button,
+                    Node {
+                        width: Val::Px(200.0),
+                        height: Val::Px(60.0),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        margin: UiRect::all(Val::Px(10.0)),
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgb(0.00, 0.00, 0.5)),
+                    SettingsButton,
+                ))
+                .with_children(|parent| {
+                    parent.spawn((
+                        Text::new("Settings"),
+                        TextFont {
+                            font_size: 24.0,
+                            ..default()
+                        },
+                        TextColor(Color::WHITE),
+                    ));
+                });
+
             parent
                 .spawn((
                     Button,
@@ -206,17 +232,17 @@ fn setup_credits(mut commands: Commands) {
         .with_children(|parent| {
             parent.spawn((
                 Text::new(
-                    "
-                Reactor Simulator
+                    r#"
+Symulator Reaktora z Urankiem
 
-                Autorzy:
+Autorzy:
 
-                Kacper Sowinski - Project Manager, Developer
-                Alan Klas - Lead Developer, Code Reviewer, 
-                Mateusz Oskar Kmiec - Developer, Sound & Visual Designer,
-                Ignacy Stykiel - Developer, Sound & Visual Designer
+Kacper Sowinski - Project Manager, Developer
+Alan Klas - Lead Developer, Code Reviewer, 
+Mateusz Oskar Kmiec - Developer, Sound & Visual Designer,
+Ignacy Sztykiel - Developer, Sound & Visual Designer
                 
-                ",
+                "#,
                 ),
                 TextFont {
                     font_size: 32.0,
@@ -225,6 +251,8 @@ fn setup_credits(mut commands: Commands) {
                 TextColor(Color::WHITE),
                 Node {
                     margin: UiRect::all(Val::Px(20.0)),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
                     ..default()
                 },
             ));
@@ -263,11 +291,12 @@ fn button_system(
             &mut BackgroundColor,
             Option<&PlayButton>,
             Option<&QuitButton>,
+            Option<&TutorialButton>,
         ),
         (Changed<Interaction>, With<Button>),
     >,
 ) {
-    for (interaction, mut color, play_btn, quit_btn) in &mut interaction_query {
+    for (interaction, mut color, play_btn, quit_btn, tutorial_btn) in &mut interaction_query {
         let (normal_color, hover_color, pressed_color) = if play_btn.is_some() {
             (
                 Color::srgb(0.25, 0.75, 0.25),
@@ -279,6 +308,12 @@ fn button_system(
                 Color::srgb(0.75, 0.25, 0.25),
                 Color::srgb(0.85, 0.45, 0.45),
                 Color::srgb(0.65, 0.35, 0.35),
+            )
+        } else if tutorial_btn.is_some() {
+            (
+                Color::srgb(0.2, 0.4, 0.8),
+                Color::srgb(0.4, 0.6, 0.9),
+                Color::srgb(0.3, 0.5, 0.7),
             )
         } else {
             (
@@ -400,7 +435,6 @@ pub fn create_volume_slider(initial_value: f32) -> impl Bundle {
         base_slider(initial_value, 1.0),
         observe(
             |value_change: On<ValueChange<f32>>, mut settings: ResMut<AudioSettings>| {
-                info!("Volume changed: {}", value_change.value);
                 settings.volume = value_change.value;
             },
         ),
