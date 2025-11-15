@@ -61,6 +61,13 @@ impl Default for UranekState {
     }
 }
 
+#[derive(Resource)]
+struct UranekAssets {
+    idle_0: Handle<Image>,
+    idle_1: Handle<Image>,
+    talking_sound: Handle<AudioSource>,
+}
+
 pub struct ReactorUiPlugin;
 
 impl Plugin for ReactorUiPlugin {
@@ -112,6 +119,14 @@ fn setup_game_ui(
 
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
     let uranek_idle_0: Handle<Image> = asset_server.load("sprites/idle_0.png");
+
+    // Load and store Uranek assets once
+    let uranek_assets = UranekAssets {
+        idle_0: uranek_idle_0.clone(),
+        idle_1: asset_server.load("sprites/idle_1.png"),
+        talking_sound: asset_server.load("sound/uranek_talking.mp3"),
+    };
+    commands.insert_resource(uranek_assets);
 
     // Main UI root
     commands.spawn((
@@ -443,8 +458,8 @@ fn setup_game_over_ui(
 fn update_uranek_idle_animation(
     time: Res<Time>,
     mut state: ResMut<UranekState>,
-    mut sprite_query: Query<(&mut ImageNode, &mut UranekIdle)>,
-    asset_server: Res<AssetServer>,
+    mut sprite_query: Query<&mut ImageNode>,
+    assets: Res<UranekAssets>,
 ) {
     let now = time.elapsed_secs();
 
@@ -456,9 +471,8 @@ fn update_uranek_idle_animation(
         // Blink phase – after a second we return to the base frame
         if now - state.last_blink_time >= blink_duration {
             state.blink_frame = 0;
-            let handle: Handle<Image> = asset_server.load("sprites/idle_0.png");
-            for (mut image_node, _) in sprite_query.iter_mut() {
-                image_node.image = handle.clone();
+            for mut image_node in sprite_query.iter_mut() {
+                image_node.image = assets.idle_0.clone();
             }
             // New reference point: from now we count the full interval to the next blink
             state.last_blink_time = now;
@@ -470,9 +484,8 @@ fn update_uranek_idle_animation(
     if now - state.last_blink_time >= interval {
         state.last_blink_time = now;
         state.blink_frame = 1;
-        let handle: Handle<Image> = asset_server.load("sprites/idle_1.png");
-        for (mut image_node, _) in sprite_query.iter_mut() {
-            image_node.image = handle.clone();
+        for mut image_node in sprite_query.iter_mut() {
+            image_node.image = assets.idle_1.clone();
         }
     }
 }
@@ -486,7 +499,7 @@ fn update_uranek_dialogue(
     mut text_query: Query<&mut Text, With<UranekText>>,
     mut bubble_query: Query<(&mut Node, &mut BackgroundColor), With<UranekBubble>>,
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
+    assets: Res<UranekAssets>,
 ) {
     let now = time.elapsed_secs();
 
@@ -541,7 +554,7 @@ fn update_uranek_dialogue(
         }
 
         // Play talking sound
-        commands.spawn(AudioPlayer::new(asset_server.load("sound/uranek_talking.mp3")));
+        commands.spawn(AudioPlayer::new(assets.talking_sound.clone()));
         state.last_comment_time = now;
 
         // Bubble stays visible for this many seconds after the line
