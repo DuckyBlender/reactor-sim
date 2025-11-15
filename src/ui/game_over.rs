@@ -1,4 +1,4 @@
-use crate::{FONT_REGULAR, GameState, simulation::GameOverReason};
+use crate::{FONT_REGULAR, GameState, menu::main_menu::ReturnToMenuButton, simulation::GameOverReason};
 use bevy::prelude::*;
 
 #[derive(Component)]
@@ -6,9 +6,6 @@ struct GameOverReasonText;
 
 #[derive(Component)]
 struct GameOverUI;
-
-#[derive(Component)]
-struct ReturnToMenuButton;
 
 pub struct GameOverPlugin;
 
@@ -80,30 +77,7 @@ fn setup_game_over_ui(
                     ..default()
                 },
             ),
-            (
-                Node {
-                    width: Val::Px(400.0),
-                    height: Val::Px(120.0),
-                    border: UiRect::all(Val::Px(10.0)),
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    ..default()
-                },
-                BorderRadius::all(Val::Px(16.0)),
-                BorderColor::all(Color::srgb(0.7, 0.7, 0.7)),
-                BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
-                Button,
-                ReturnToMenuButton,
-                children![(
-                    Text::new("Powrót do menu"),
-                    TextFont {
-                        font,
-                        font_size: 40.0,
-                        ..default()
-                    },
-                    TextColor(Color::WHITE),
-                )],
-            ),
+            crate::menu::main_menu::create_return_to_menu_button(font),
         ],
     ));
 }

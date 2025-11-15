@@ -103,28 +103,7 @@ fn setup_pause_menu(
                 },
                 Transform::default(),
             ),
-            (
-                Button,
-                Node {
-                    width: Val::Px(200.0),
-                    height: Val::Px(60.0),
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    margin: UiRect::all(Val::Px(10.0)),
-                    ..default()
-                },
-                BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
-                ReturnToMenuButton,
-                children![(
-                    Text::new("Powrót do menu"),
-                    TextFont {
-                        font,
-                        font_size: 24.0,
-                        ..default()
-                    },
-                    TextColor(Color::WHITE),
-                )],
-            ),
+            crate::menu::main_menu::create_return_to_menu_button(font),
         ],
     ));
 }

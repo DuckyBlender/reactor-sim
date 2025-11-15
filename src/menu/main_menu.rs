@@ -24,6 +24,32 @@ pub struct ReturnToMenuButton;
 
 pub struct MainMenuPlugin;
 
+/// Creates a simple "Powrót do menu" button with consistent styling
+pub fn create_return_to_menu_button(font: Handle<Font>) -> impl Bundle {
+    (
+        Button,
+        Node {
+            width: Val::Px(200.0),
+            height: Val::Px(60.0),
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            margin: UiRect::all(Val::Px(10.0)),
+            ..default()
+        },
+        BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
+        ReturnToMenuButton,
+        bevy::prelude::children![(
+            Text::new("Powrót do menu"),
+            TextFont {
+                font,
+                font_size: 24.0,
+                ..default()
+            },
+            TextColor(Color::WHITE),
+        )],
+    )
+}
+
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::MainMenu), setup_main_menu)

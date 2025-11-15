@@ -33,6 +33,7 @@ impl Plugin for SimulationPlugin {
 pub const REACTOR_TEMP_LIMIT: f32 = 1200.0; // °C - explosion threshold
 pub const REACTOR_PRESSURE_LIMIT: f32 = 160.0; // bar - explosion threshold
 pub const TURBINE_TEMP_LIMIT: f32 = 290.0; // °C
+pub const TURBINE_TEMP_LIMIT_UPGRADED: f32 = 350.0; // °C - upgraded turbine limit
 const ROOM_TEMPERATURE: f32 = 20.0; // °C
 const FUEL_HALF_LIFE_SECONDS: f32 = 180.0;
 
@@ -57,6 +58,7 @@ pub struct TurbineState {
     pub temperature: f32,  // °C
     pub durability: f32,   // 0-100
     pub is_destroyed: bool,
+    pub is_upgraded: bool, // Whether turbine has been upgraded
 }
 
 impl Default for TurbineState {
@@ -66,6 +68,7 @@ impl Default for TurbineState {
             temperature: ROOM_TEMPERATURE,
             durability: 100.0,
             is_destroyed: false,
+            is_upgraded: false,
         }
     }
 }
@@ -138,34 +141,38 @@ fn simulate_reactor(
     let fuel_energy = fuel_energy_factor(environment.fuel_left);
     let fuel_rate = fuel_rate_factor(environment.fuel_left);
 
-    // Nuclear reaction generates heat based on reactivity
-    // Exponential growth: higher reactivity causes exponential temperature increase
+    // Nuclear reaction generates heat based on reactivity AND current temperature
+    // TRUE exponential runaway: higher temperature -> more reaction -> more heat
     let exp_factor = (reactivity * 2.5).exp();
-    let heat_generation_target = ROOM_TEMPERATURE + (exp_factor - 1.0) * 150.0 * fuel_energy;
+    let base_heat = ROOM_TEMPERATURE + (exp_factor - 1.0) * 150.0 * fuel_energy;
+    
+    // Positive feedback: temperature increases reaction rate exponentially
+    let temp_above_room = (reactor.temperature - ROOM_TEMPERATURE).max(0.0);
+    let temp_feedback = (temp_above_room / 3000.0).min(1.0); // Cap the exponent to prevent overflow
+    let runaway_multiplier = temp_feedback.exp(); // Exponential feedback!
+    
+    let heat_generation_rate = base_heat * runaway_multiplier;
 
     // Water flow removes heat from reactor
     let flow_rate = (controls.turbine_applied / 100.0).clamp(0.0, 1.0);
     let heat_removed_by_water = flow_rate * (reactor.temperature - ROOM_TEMPERATURE) * 0.4;
     
-    // Final temperature target balances heat generation and water cooling
-    let temperature_target = heat_generation_target - heat_removed_by_water;
-
-    // Temperature change rate increases with temperature (positive feedback)
-    let temp_normalized = ((reactor.temperature - ROOM_TEMPERATURE) / 1000.0).max(0.0);
-    let rate_multiplier = (1.0 + (temp_normalized * 2.0).exp() * 0.5) * fuel_rate;
-    let change_rate = 0.016 * rate_multiplier; // 5x slower natural cooldown
-
-    reactor.temperature = smooth_towards(reactor.temperature, temperature_target, change_rate, delta);
+    // Net heat change per second
+    let heat_rate = (heat_generation_rate - reactor.temperature) - heat_removed_by_water;
+    
+    // Apply heat rate directly (faster and faster as temp increases)
+    let temp_change_speed = 0.5 * fuel_rate; // Base speed
+    reactor.temperature += heat_rate * temp_change_speed * delta;
 
     // Pressure increases with both reactivity and temperature
-    let pressure_from_reactivity = reactivity * 15.0 * fuel_energy;
-    let pressure_exponential_boost = ((reactivity * 1.8).exp() - 1.0) * 2.5 * fuel_energy;
-    let pressure_from_temperature = (reactor.temperature - 800.0).max(0.0) * 0.015 * fuel_energy;
+    let pressure_from_reactivity = reactivity * 150.0 * fuel_energy;
+    let pressure_exponential_boost = ((reactivity * 2.0).exp() - 1.0) * 20.0 * fuel_energy;
+    let pressure_from_temperature = (reactor.temperature - 800.0).max(0.0) * 0.01 * fuel_energy;
     let pressure_target = pressure_from_reactivity + pressure_exponential_boost + pressure_from_temperature;
 
     // Pressure change rate increases with reactivity and current pressure
     let pressure_normalized = (reactor.pressure / 100.0).max(0.0);
-    let pressure_rate = (0.04 + reactivity * 0.08 + pressure_normalized * 0.01) * fuel_rate; // Much slower pressure buildup
+    let pressure_rate = (0.15 + reactivity * 0.25 + pressure_normalized * 0.05) * fuel_rate; // Much slower pressure buildup
     reactor.pressure = smooth_towards(reactor.pressure, pressure_target, pressure_rate, delta);
 }
 
@@ -224,7 +231,12 @@ fn simulate_turbine(
 
     // Power generation based on turbine temperature
     // Sweet spot: 60-85% of TURBINE_TEMP_LIMIT (174-246°C)
-    let temp_percentage = (turbine.temperature / TURBINE_TEMP_LIMIT).clamp(0.0, 1.0);
+    let temp_limit = if turbine.is_upgraded {
+        TURBINE_TEMP_LIMIT_UPGRADED
+    } else {
+        TURBINE_TEMP_LIMIT
+    };
+    let temp_percentage = (turbine.temperature / temp_limit).clamp(0.0, 1.0);
 
     let power_efficiency = if temp_percentage < 0.60 {
         // Below 60%: low efficiency
@@ -249,7 +261,11 @@ fn simulate_turbine(
     environment.money += environment.power_generated * delta * 0.1;
 
     // Durability damage in red zone (80%+ of limit)
-    if temp_percentage >= 0.80 {
+    // Instant destruction at 95%
+    if temp_percentage >= 0.95 {
+        turbine.durability = 0.0;
+        turbine.is_destroyed = true;
+    } else if temp_percentage >= 0.80 {
         let damage_factor = ((temp_percentage - 0.80) / 0.15).clamp(0.0, 1.0);
         let damage = damage_factor * 5.0 * delta;
         turbine.durability = (turbine.durability - damage).max(0.0);

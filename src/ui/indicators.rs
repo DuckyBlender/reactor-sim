@@ -7,7 +7,8 @@ use bevy::{
 use crate::{
     FONT_REGULAR,
     simulation::{
-        EnvironmentState, REACTOR_TEMP_LIMIT, ReactorState, TURBINE_TEMP_LIMIT, TurbineState,
+        EnvironmentState, REACTOR_TEMP_LIMIT, ReactorState, TURBINE_TEMP_LIMIT, 
+        TURBINE_TEMP_LIMIT_UPGRADED, TurbineState,
     },
 };
 
@@ -297,7 +298,14 @@ pub fn update_gauge_colors(
         let (current_value, limit) = match gauge_border.gauge_type {
             GaugeType::ReactorTemp => (reactor.temperature, REACTOR_TEMP_LIMIT),
             GaugeType::ReactorPressure => (reactor.pressure, 160.0), // bar
-            GaugeType::TurbineTemp => (turbine.temperature, TURBINE_TEMP_LIMIT),
+            GaugeType::TurbineTemp => {
+                let temp_limit = if turbine.is_upgraded {
+                    TURBINE_TEMP_LIMIT_UPGRADED
+                } else {
+                    TURBINE_TEMP_LIMIT
+                };
+                (turbine.temperature, temp_limit)
+            }
             GaugeType::FuelLeft => unreachable!("Fuel gauge handled separately"),
         };
 

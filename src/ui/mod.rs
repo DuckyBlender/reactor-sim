@@ -17,6 +17,15 @@ pub mod uranek;
 pub struct UpgradeButton;
 
 #[derive(Component)]
+struct RefuelButtonText;
+
+#[derive(Component)]
+pub struct TurbineUpgradeButton;
+
+#[derive(Component)]
+struct TurbineUpgradeButtonText;
+
+#[derive(Component)]
 struct MoneyText;
 pub struct ReactorUiPlugin;
 
@@ -44,6 +53,8 @@ impl Plugin for ReactorUiPlugin {
                     update_money_display,
                     update_refuel_button_state,
                     handle_refuel_button,
+                    update_turbine_upgrade_button_state,
+                    handle_turbine_upgrade_button,
                 )
                     .run_if(in_state(GameState::InGame).or(in_state(GameState::Tutorial))),
             )
@@ -166,28 +177,72 @@ fn setup_game_ui(
                     padding: UiRect::axes(Val::Px(12.0), Val::Px(10.0)),
                     ..default()
                 },
+                ZIndex(100),
                 BorderRadius::all(Val::Px(18.0)),
                 BorderColor::all(Color::srgba(0.95, 0.8, 0.3, 0.75)),
                 BackgroundColor(Color::srgba(0.08, 0.08, 0.12, 0.9)),
                 UpgradeButton,
                 children![
                     (
-                        Text::new("Refuel Rods"),
+                        Text::new("Wymiana paliwa"),
                         TextFont {
                             font: font.clone(),
                             font_size: 28.0,
                             ..default()
                         },
                         TextColor(Color::srgb(0.95, 0.95, 0.95)),
+                        RefuelButtonText,
                     ),
                     (
-                        Text::new("$250 instant service"),
+                        Text::new("$250"),
                         TextFont {
                             font: font.clone(),
                             font_size: 18.0,
                             ..default()
                         },
                         TextColor(Color::srgb(0.9, 0.8, 0.4)),
+                    ),
+                ],
+            ),
+            (
+                Button,
+                Node {
+                    width: Val::Px(260.0),
+                    height: Val::Px(96.0),
+                    position_type: PositionType::Absolute,
+                    top: Val::Px(310.0),
+                    right: Val::Px(40.0),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    flex_direction: FlexDirection::Column,
+                    row_gap: Val::Px(6.0),
+                    padding: UiRect::axes(Val::Px(12.0), Val::Px(10.0)),
+                    ..default()
+                },
+                ZIndex(100),
+                BorderRadius::all(Val::Px(18.0)),
+                BorderColor::all(Color::srgba(0.3, 0.8, 0.95, 0.75)),
+                BackgroundColor(Color::srgba(0.08, 0.08, 0.12, 0.9)),
+                TurbineUpgradeButton,
+                children![
+                    (
+                        Text::new("Upgrade turbiny"),
+                        TextFont {
+                            font: font.clone(),
+                            font_size: 28.0,
+                            ..default()
+                        },
+                        TextColor(Color::srgb(0.95, 0.95, 0.95)),
+                        TurbineUpgradeButtonText,
+                    ),
+                    (
+                        Text::new("$500"),
+                        TextFont {
+                            font: font.clone(),
+                            font_size: 18.0,
+                            ..default()
+                        },
+                        TextColor(Color::srgb(0.4, 0.8, 0.9)),
                     ),
                 ],
             ),
@@ -236,7 +291,7 @@ fn setup_game_ui(
                 left: Val::Px(20.0),
                 flex_direction: FlexDirection::Row,
                 column_gap: Val::Px(16.0),
-                align_items: AlignItems::End,
+                align_items: AlignItems::Start,
                 ..default()
             },
             DespawnOnExit(GameState::InGame),
@@ -306,10 +361,12 @@ const REFUEL_COST: f32 = 250.0;
 #[allow(clippy::type_complexity)]
 fn update_refuel_button_state(
     environment: Res<EnvironmentState>,
+    controls: Res<ControlSettings>,
     mut button_query: Query<
-        (&mut BackgroundColor, &mut BorderColor, &Interaction),
-        (With<UpgradeButton>, Changed<Interaction>),
+        (&mut BackgroundColor, &mut BorderColor, &Interaction, &Children),
+        With<UpgradeButton>,
     >,
+    mut text_query: Query<&mut TextColor, With<RefuelButtonText>>,
 ) {
     const NORMAL_BG: Color = Color::srgba(0.08, 0.08, 0.12, 0.9);
     const HOVER_BG: Color = Color::srgba(0.12, 0.12, 0.16, 0.95);
@@ -321,10 +378,24 @@ fn update_refuel_button_state(
     const PRESS_BORDER: Color = Color::srgba(0.85, 0.7, 0.25, 1.0);
     const DISABLED_BORDER: Color = Color::srgba(0.3, 0.3, 0.3, 0.4);
 
-    for (mut bg_color, mut border_color, interaction) in button_query.iter_mut() {
+    const NORMAL_TEXT: Color = Color::srgb(0.95, 0.95, 0.95);
+    const DISABLED_TEXT: Color = Color::srgb(0.5, 0.5, 0.5);
+
+    for (mut bg_color, mut border_color, interaction, children) in button_query.iter_mut() {
         let can_afford = environment.money >= REFUEL_COST;
+        let fuel_high = environment.fuel_left >= 0.9;
+        let reactivity_active = controls.reactivity_applied > 1.0;
+        let turbine_active = controls.turbine_applied > 1.0;
+        let can_refuel = can_afford && !fuel_high && !reactivity_active && !turbine_active;
         
-        if !can_afford {
+        // Update text color
+        for child_entity in children.iter() {
+            if let Ok(mut text_color) = text_query.get_mut(child_entity) {
+                text_color.0 = if can_refuel { NORMAL_TEXT } else { DISABLED_TEXT };
+            }
+        }
+        
+        if !can_refuel {
             *bg_color = DISABLED_BG.into();
             *border_color = BorderColor::all(DISABLED_BORDER);
         } else {
@@ -349,13 +420,104 @@ fn update_refuel_button_state(
 fn handle_refuel_button(
     interaction_query: Query<&Interaction, (Changed<Interaction>, With<UpgradeButton>)>,
     mut environment: ResMut<EnvironmentState>,
+    controls: Res<ControlSettings>,
     mut refuel_animation: ResMut<RefuelAnimationState>,
 ) {
     for interaction in &interaction_query {
-        if *interaction == Interaction::Pressed && environment.money >= REFUEL_COST {
+        info!("Refuel button interaction: {:?}", interaction);
+        let can_afford = environment.money >= REFUEL_COST;
+        let fuel_high = environment.fuel_left >= 0.9;
+        let reactivity_active = controls.reactivity_applied > 1.0;
+        let turbine_active = controls.turbine_applied > 1.0;
+        let can_refuel = can_afford && !fuel_high && !reactivity_active && !turbine_active;
+        
+        if *interaction == Interaction::Pressed && can_refuel {
+            info!("Refueling!");
             environment.money -= REFUEL_COST;
             environment.fuel_left = 1.0;
             refuel_animation.trigger();
+        } else if *interaction == Interaction::Pressed {
+            info!("Cannot refuel: afford={}, fuel_high={}, reactivity={}, turbine={}", 
+                  can_afford, fuel_high, reactivity_active, turbine_active);
+        }
+    }
+}
+
+const TURBINE_UPGRADE_COST: f32 = 500.0;
+
+#[allow(clippy::type_complexity)]
+fn update_turbine_upgrade_button_state(
+    environment: Res<EnvironmentState>,
+    turbine: Res<crate::simulation::TurbineState>,
+    mut button_query: Query<
+        (&mut BackgroundColor, &mut BorderColor, &Interaction, &Children),
+        With<TurbineUpgradeButton>,
+    >,
+    mut text_query: Query<&mut TextColor, With<TurbineUpgradeButtonText>>,
+) {
+    const NORMAL_BG: Color = Color::srgba(0.08, 0.08, 0.12, 0.9);
+    const HOVER_BG: Color = Color::srgba(0.12, 0.12, 0.16, 0.95);
+    const PRESS_BG: Color = Color::srgba(0.06, 0.06, 0.10, 1.0);
+    const DISABLED_BG: Color = Color::srgba(0.05, 0.05, 0.08, 0.7);
+    
+    const NORMAL_BORDER: Color = Color::srgba(0.3, 0.8, 0.95, 0.75);
+    const HOVER_BORDER: Color = Color::srgba(0.4, 0.9, 1.0, 0.9);
+    const PRESS_BORDER: Color = Color::srgba(0.25, 0.7, 0.85, 1.0);
+    const DISABLED_BORDER: Color = Color::srgba(0.3, 0.3, 0.3, 0.4);
+
+    const NORMAL_TEXT: Color = Color::srgb(0.95, 0.95, 0.95);
+    const DISABLED_TEXT: Color = Color::srgb(0.5, 0.5, 0.5);
+
+    for (mut bg_color, mut border_color, interaction, children) in button_query.iter_mut() {
+        let can_afford = environment.money >= TURBINE_UPGRADE_COST;
+        let can_upgrade = can_afford && !turbine.is_upgraded;
+        
+        // Update text color
+        for child_entity in children.iter() {
+            if let Ok(mut text_color) = text_query.get_mut(child_entity) {
+                text_color.0 = if can_upgrade { NORMAL_TEXT } else { DISABLED_TEXT };
+            }
+        }
+        
+        if !can_upgrade {
+            *bg_color = DISABLED_BG.into();
+            *border_color = BorderColor::all(DISABLED_BORDER);
+        } else {
+            match *interaction {
+                Interaction::Pressed => {
+                    *bg_color = PRESS_BG.into();
+                    *border_color = BorderColor::all(PRESS_BORDER);
+                }
+                Interaction::Hovered => {
+                    *bg_color = HOVER_BG.into();
+                    *border_color = BorderColor::all(HOVER_BORDER);
+                }
+                Interaction::None => {
+                    *bg_color = NORMAL_BG.into();
+                    *border_color = BorderColor::all(NORMAL_BORDER);
+                }
+            }
+        }
+    }
+}
+
+fn handle_turbine_upgrade_button(
+    interaction_query: Query<&Interaction, (Changed<Interaction>, With<TurbineUpgradeButton>)>,
+    mut environment: ResMut<EnvironmentState>,
+    mut turbine: ResMut<crate::simulation::TurbineState>,
+) {
+    for interaction in &interaction_query {
+        info!("Turbine upgrade button interaction: {:?}", interaction);
+        let can_afford = environment.money >= TURBINE_UPGRADE_COST;
+        let can_upgrade = can_afford && !turbine.is_upgraded;
+        
+        if *interaction == Interaction::Pressed && can_upgrade {
+            info!("Upgrading turbine!");
+            environment.money -= TURBINE_UPGRADE_COST;
+            turbine.is_upgraded = true;
+        } else if *interaction == Interaction::Pressed {
+            info!("Cannot upgrade: afford={}, already_upgraded={}", 
+                  can_afford, turbine.is_upgraded);
         }
     }
 }
