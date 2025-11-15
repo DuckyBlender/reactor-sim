@@ -452,7 +452,7 @@ fn update_uranek_idle_animation(
     let blink_duration = 1.0; // time of 'closed' eyes
 
     if state.blink_frame == 1 {
-        // Faza mrugnięcia – po sekundzie wracamy do podstawowej klatki
+        // Blink phase – after a second we return to the base frame
         if now - state.last_blink_time >= blink_duration {
             state.blink_frame = 0;
             let handle: Handle<Image> = asset_server.load("sprites/idle_0.png");
