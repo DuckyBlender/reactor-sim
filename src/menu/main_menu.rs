@@ -109,11 +109,12 @@ fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 .spawn((
                     Button,
                     Node {
-                        width: Val::Px(200.0),
+                        width: Val::Px(250.0),
                         height: Val::Px(60.0),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
                         margin: UiRect::all(Val::Px(10.0)),
+                        padding: UiRect::all(Val::Px(10.0)),
                         ..default()
                     },
                     BackgroundColor(Color::srgb(0.25, 0.75, 0.25)),
@@ -135,11 +136,12 @@ fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 .spawn((
                     Button,
                     Node {
-                        width: Val::Px(200.0),
+                        width: Val::Px(250.0),
                         height: Val::Px(60.0),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
                         margin: UiRect::all(Val::Px(10.0)),
+                        padding: UiRect::all(Val::Px(16.0)),
                         ..default()
                     },
                     BackgroundColor(Color::srgb(0.2, 0.4, 0.8)),
@@ -161,11 +163,12 @@ fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 .spawn((
                     Button,
                     Node {
-                        width: Val::Px(200.0),
+                        width: Val::Px(250.0),
                         height: Val::Px(60.0),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
                         margin: UiRect::all(Val::Px(10.0)),
+                        padding: UiRect::all(Val::Px(16.0)),
                         ..default()
                     },
                     BackgroundColor(Color::srgb(0.00, 0.00, 0.5)),
@@ -187,11 +190,12 @@ fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 .spawn((
                     Button,
                     Node {
-                        width: Val::Px(200.0),
+                        width: Val::Px(250.0),
                         height: Val::Px(60.0),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
                         margin: UiRect::all(Val::Px(10.0)),
+                        padding: UiRect::all(Val::Px(16.0)),
                         ..default()
                     },
                     BackgroundColor(Color::srgb(0.00, 0.00, 0.5)),
@@ -213,11 +217,12 @@ fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 .spawn((
                     Button,
                     Node {
-                        width: Val::Px(200.0),
+                        width: Val::Px(250.0),
                         height: Val::Px(60.0),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
                         margin: UiRect::all(Val::Px(10.0)),
+                        padding: UiRect::all(Val::Px(16.0)),
                         ..default()
                     },
                     BackgroundColor(Color::srgb(0.75, 0.25, 0.25)),
