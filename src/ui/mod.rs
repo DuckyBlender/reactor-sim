@@ -394,7 +394,7 @@ fn setup_pause_menu(
                     },
                 ),
                 children![(
-                    Text::new("Return to Menu"),
+                    Text::new("Powrót do menu"),
                     TextFont {
                         font,
                         font_size: 40.0,
@@ -418,9 +418,9 @@ fn setup_game_over_ui(
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
 
     let reason_text = match *game_over_reason {
-        GameOverReason::ReactorExplosion => "REACTOR EXPLOSION",
-        GameOverReason::ReactorMeltdown => "REACTOR MELTDOWN",
-        GameOverReason::None => "Unknown cause",
+        GameOverReason::ReactorExplosion => "EKSPLOZJA REAKTORA",
+        GameOverReason::ReactorMeltdown => "ROZPAD REAKTORA",
+        GameOverReason::None => "Nieznana przyczyna",
     };
 
     // Game Over screen
@@ -485,7 +485,7 @@ fn setup_game_over_ui(
                     },
                 ),
                 children![(
-                    Text::new("Return to Menu"),
+                    Text::new("Powrót do menu"),
                     TextFont {
                         font,
                         font_size: 40.0,

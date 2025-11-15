@@ -104,7 +104,7 @@ fn setup_settings(
         ))
         .with_children(|parent| {
             parent.spawn((
-                Text::new("Settings"),
+                Text::new("Ustawienia"),
                 TextFont {
                     font: asset_server.load("fonts/LTSuperior-Medium.ttf"),
                     font_size: 32.0,
@@ -125,7 +125,7 @@ fn setup_settings(
                 },))
                 .with_children(|parent| {
                     parent.spawn((
-                        Text::new("Volume"),
+                        Text::new("Głośność"),
                         TextFont {
                             font: asset_server.load("fonts/LTSuperior-Regular.ttf"),
                             font_size: 24.0,
@@ -144,6 +144,12 @@ fn setup_settings(
                             parent.spawn((
                                 Text::new(format!("{}%", (settings.volume * 100.0) as u8)),
                                 VolumeText,
+                                TextFont {
+                                    font: asset_server.load("fonts/LTSuperior-Regular.ttf"),
+                                    font_size: 24.0,
+                                    ..default()
+                                },
+                                TextColor(Color::WHITE),
                             ));
                         });
 
@@ -163,8 +169,9 @@ fn setup_settings(
                         ))
                         .with_children(|parent| {
                             parent.spawn((
-                                Text::new("Back"),
+                                Text::new("Powrót"),
                                 TextFont {
+                                    font: asset_server.load("fonts/LTSuperior-Regular.ttf"),
                                     font_size: 24.0,
                                     ..default()
                                 },

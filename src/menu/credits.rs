@@ -29,7 +29,7 @@ fn handle_back_button(
     }
 }
 
-fn setup_credits(mut commands: Commands) {
+fn setup_credits(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((Camera2d, DespawnOnExit(GameState::Credits)));
     commands
         .spawn((
@@ -60,6 +60,7 @@ Ignacy Sztykiel - Developer, Sound & Visual Designer
                 "#,
                 ),
                 TextFont {
+                    font: asset_server.load("fonts/LTSuperior-Regular.ttf"),
                     font_size: 32.0,
                     ..default()
                 },

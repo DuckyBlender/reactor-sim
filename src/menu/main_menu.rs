@@ -44,7 +44,10 @@ impl Plugin for MainMenuPlugin {
     }
 }
 
-fn setup_main_menu(mut commands: Commands) {
+fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
+
+    let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
+
     commands.spawn((Camera2d, DespawnOnExit(GameState::MainMenu)));
     commands
         .spawn((
@@ -63,6 +66,7 @@ fn setup_main_menu(mut commands: Commands) {
             parent.spawn((
                 Text::new("Symulator Reaktora z Urankiem"),
                 TextFont {
+                    font:font.clone(),
                     font_size: 64.0,
                     ..default()
                 },
@@ -90,6 +94,7 @@ fn setup_main_menu(mut commands: Commands) {
                     parent.spawn((
                         Text::new("Endless Mode"),
                         TextFont {
+                            font:font.clone(),
                             font_size: 24.0,
                             ..default()
                         },
@@ -113,8 +118,9 @@ fn setup_main_menu(mut commands: Commands) {
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        Text::new("Tutorial"),
+                        Text::new("Samouczek"),
                         TextFont {
+                            font:font.clone(),
                             font_size: 24.0,
                             ..default()
                         },
@@ -138,8 +144,9 @@ fn setup_main_menu(mut commands: Commands) {
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        Text::new("Settings"),
+                        Text::new("Ustawienia"),
                         TextFont {
+                            font:font.clone(),
                             font_size: 24.0,
                             ..default()
                         },
@@ -163,8 +170,9 @@ fn setup_main_menu(mut commands: Commands) {
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        Text::new("Credits"),
+                        Text::new("Autorzy"),
                         TextFont {
+                            font:font.clone(),
                             font_size: 24.0,
                             ..default()
                         },
@@ -188,8 +196,9 @@ fn setup_main_menu(mut commands: Commands) {
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        Text::new("Quit"),
+                        Text::new("Opuść grę"),
                         TextFont {
+                            font:font.clone(),
                             font_size: 24.0,
                             ..default()
                         },
