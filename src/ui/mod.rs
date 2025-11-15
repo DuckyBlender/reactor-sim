@@ -1,16 +1,16 @@
-use bevy::{
-    prelude::*,
-    input_focus::tab_navigation::TabGroup, ui::widget::Button
-};
+use bevy::ui_widgets::{observe, Activate, Button as UiWidgetButton};
+use bevy::{input_focus::tab_navigation::TabGroup, prelude::*};
 
 use crate::{
-    GameState, simulation::{ControlSettings, EnvironmentState}, FONT_REGULAR
+    FONT_REGULAR, GameState,
+    model::RefuelAnimationState,
+    simulation::{ControlSettings, EnvironmentState},
 };
 
-pub mod indicators;
-pub mod sliders;
 mod game_over;
+pub mod indicators;
 mod pause;
+pub mod sliders;
 pub use pause::PauseState;
 pub mod uranek;
 
@@ -24,31 +24,38 @@ pub struct ReactorUiPlugin;
 impl Plugin for ReactorUiPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<uranek::UranekState>()
-        .add_systems(OnEnter(GameState::InGame), setup_game_ui)
-        .add_systems(
-            Update,
-            (
-                sliders::sync_slider_values,
-                sliders::update_slider_visuals.after(sliders::sync_slider_values),
-                sliders::update_slider_value_text,
-                sliders::update_applied_value_text,
-            ),
-        )
-        .add_systems(
-            Update,
-            (
-                indicators::update_indicators,
-                indicators::update_gauge_colors,
-                indicators::handle_turbine_destroyed,
-                indicators::rebuild_turbine_gauge_from_buyback,
-                update_money_display,
-                uranek::update_uranek_idle_animation,
-                uranek::update_uranek_dialogue,
+            .add_systems(OnEnter(GameState::InGame), setup_game_ui)
+            .add_systems(OnEnter(GameState::Tutorial), setup_game_ui)
+            .add_systems(
+                Update,
+                (
+                    sliders::sync_slider_values,
+                    sliders::update_slider_visuals.after(sliders::sync_slider_values),
+                    sliders::update_slider_value_text,
+                    sliders::update_applied_value_text,
+                ),
             )
-                .run_if(in_state(GameState::InGame)),
-        )
-        .add_plugins(game_over::GameOverPlugin)
-        .add_plugins(pause::PausePlugin);
+            .add_systems(
+                Update,
+                (
+                    indicators::update_indicators,
+                    indicators::update_gauge_colors,
+                    indicators::handle_turbine_destroyed,
+                    indicators::rebuild_turbine_gauge_from_buyback,
+                    update_money_display,
+                )
+                    .run_if(in_state(GameState::InGame).or(in_state(GameState::Tutorial))),
+            )
+            .add_systems(
+                Update,
+                (
+                    uranek::update_uranek_idle_animation,
+                    uranek::update_uranek_dialogue,
+                )
+                    .run_if(in_state(GameState::InGame)),
+            )
+            .add_plugins(game_over::GameOverPlugin)
+            .add_plugins(pause::PausePlugin);
     }
 }
 
@@ -59,24 +66,26 @@ fn setup_game_ui(
     mut uranek_state: ResMut<uranek::UranekState>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     time: Res<Time>,
+    state: Res<State<GameState>>,
 ) {
+    let current_state = *state.get();
     *uranek_state = uranek::UranekState::default();
     uranek_state.last_default_text_time = time.elapsed_secs();
 
     let font = asset_server.load(FONT_REGULAR);
-    
+
     // Load spritesheet and create atlas layout
     let spritesheet_texture = asset_server.load("sprites/spritesheet.png");
-    
+
     // Parse sprites.txt to define atlas layout
     // Format: talk,0,0,928,1120; idle,929,0,928,1120; wave,0,1121,928,1120; hot,929,1121,928,1120
     let mut layout = TextureAtlasLayout::new_empty(UVec2::new(1857, 2241));
-    
+
     let talk_idx = layout.add_texture(URect::new(0, 0, 928, 1120));
     let idle_idx = layout.add_texture(URect::new(929, 0, 1857, 1120));
     layout.add_texture(URect::new(0, 1121, 928, 2241)); // wave
     let hot_idx = layout.add_texture(URect::new(929, 1121, 1857, 2241)); // hot
-    
+
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
     // Load and store Uranek assets once
@@ -87,17 +96,16 @@ fn setup_game_ui(
         talk_idx,
         hot_idx,
     };
-    
+
     // Store sprite info for use before inserting resource
     let uranek_sprite_texture = uranek_assets.spritesheet.clone();
     let uranek_atlas_layout = uranek_assets.atlas_layout.clone();
     let uranek_idle_idx = uranek_assets.idle_idx;
-    
+
     commands.insert_resource(uranek_assets);
 
     // Main UI root
-    commands.spawn((
-        DespawnOnExit(GameState::InGame),
+    let mut ui_root = commands.spawn((
         Node {
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
@@ -142,97 +150,58 @@ fn setup_game_ui(
                     ..default()
                 },
             ),
-            // Uranek companion (top-left corner)
             (
+                UiWidgetButton,
                 Node {
+                    width: Val::Px(260.0),
+                    height: Val::Px(96.0),
                     position_type: PositionType::Absolute,
-                    top: Val::Px(20.0),
-                    left: Val::Px(20.0),
-                    flex_direction: FlexDirection::Row,
-                    column_gap: Val::Px(16.0),
-                    align_items: AlignItems::End,
-                    ..default()
-                },
-                children![
-                    // Uranek sprite
-                    (
-                        ImageNode {
-                            image: uranek_sprite_texture,
-                            texture_atlas: Some(TextureAtlas {
-                                layout: uranek_atlas_layout,
-                                index: uranek_idle_idx,
-                            }),
-                            ..default()
-                        },
-                        Node {
-                            width: Val::Px(220.0),
-                            height: Val::Px(220.0),
-                            ..default()
-                        },
-                        uranek::Uranek,
-                        uranek::UranekIdle,
-                    ),
-                    // Speech bubble (initially visible with default text)
-                    (
-                        Node {
-                            width: Val::Px(420.0),
-                            min_height: Val::Px(80.0),
-                            padding: UiRect::all(Val::Px(16.0)),
-                            border: UiRect::all(Val::Px(2.0)),
-                            ..default()
-                        },
-                        BackgroundColor(Color::srgba(0.05, 0.05, 0.08, 0.85)),
-                        BorderRadius::all(Val::Px(12.0)),
-                        BorderColor::all(Color::srgb(0.6, 0.9, 1.0)),
-                        uranek::UranekBubble,
-                        children![
-                            (
-                                Text::new("Uranek: Pilnujmy, żeby ten reaktor trzymał się w ryzach."),
-                                TextFont {
-                                    font: font.clone(),
-                                    font_size: 22.0,
-                                    ..default()
-                                },
-                                TextColor(Color::WHITE),
-                                uranek::UranekText,
-                            ),
-                        ],
-                    ),
-                ],
-            ),
-            (
-                Button,
-                Node {
-                    width: Val::Percent(30.0),
-                    height: Val::Percent(30.0),
-                    max_width: Val::Px(300.0) ,
-                    max_height: Val::Px(150.0), 
+                    top: Val::Px(200.0),
+                    right: Val::Px(40.0),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
-                    left: Val::Percent(80.0),
-                    right: Val::Percent(1.0),
-                    top: Val::Percent(35.0),
-                    bottom: Val::Percent(50.0),
-                    margin: UiRect::all(Val::Px(10.0)),
+                    flex_direction: FlexDirection::Column,
+                    row_gap: Val::Px(6.0),
+                    padding: UiRect::axes(Val::Px(12.0), Val::Px(10.0)),
                     ..default()
                 },
-                BorderRadius::all(Val::Px(12.0)),
-                BorderColor::all(Color::srgba(0.83, 0.83, 0.83, 0.85)),
-                BackgroundColor(Color::srgba(0.83, 0.83, 0.83, 0.85)),
+                BorderRadius::all(Val::Px(18.0)),
+                BorderColor::all(Color::srgba(0.95, 0.8, 0.3, 0.75)),
+                BackgroundColor(Color::srgba(0.08, 0.08, 0.12, 0.9)),
                 UpgradeButton,
-                children![(
-                    Text::new("Upgrade  67$"),
-                    TextFont {
-                        font: font.clone(),
-                        font_size: 48.0,
-                        ..default()
+                observe(
+                    |_activate: On<Activate>,
+                     mut environment: ResMut<EnvironmentState>,
+                     mut refuel_animation: ResMut<RefuelAnimationState>| {
+                        const REFUEL_COST: f32 = 250.0;
+                        if environment.money < REFUEL_COST {
+                            return;
+                        }
+                        environment.money -= REFUEL_COST;
+                        environment.fuel_left = 1.0;
+                        refuel_animation.trigger();
                     },
-                    TextColor(Color::WHITE),
-                    Node {
-                        position_type: PositionType::Absolute,
-                        ..default()
-                    },
-                )],
+                ),
+                children![
+                    (
+                        Text::new("Refuel Rods"),
+                        TextFont {
+                            font: font.clone(),
+                            font_size: 28.0,
+                            ..default()
+                        },
+                        TextColor(Color::srgb(0.95, 0.95, 0.95)),
+                    ),
+                    (
+                        Text::new("$250 instant service"),
+                        TextFont {
+                            font: font.clone(),
+                            font_size: 18.0,
+                            ..default()
+                        },
+                        TextColor(Color::srgb(0.9, 0.8, 0.4)),
+                    ),
+                ],
             ),
             // Bottom section with gauges and sliders
             (
@@ -252,13 +221,83 @@ fn setup_game_ui(
                     sliders::slider_panel(
                         controls.reactivity_target,
                         controls.turbine_target,
-                        font,
+                        font.clone(),
                         &asset_server
                     ),
                 ],
             ),
         ],
     ));
+
+    match current_state {
+        GameState::InGame => {
+            ui_root.insert(DespawnOnExit(GameState::InGame));
+        }
+        GameState::Tutorial => {
+            ui_root.insert(DespawnOnExit(GameState::Tutorial));
+        }
+        _ => {}
+    }
+
+    // Spawn Uranek companion only in InGame state, not during Tutorial
+    if current_state == GameState::InGame {
+        commands.spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                top: Val::Px(20.0),
+                left: Val::Px(20.0),
+                flex_direction: FlexDirection::Row,
+                column_gap: Val::Px(16.0),
+                align_items: AlignItems::End,
+                ..default()
+            },
+            DespawnOnExit(GameState::InGame),
+            children![
+                // Uranek sprite
+                (
+                    ImageNode {
+                        image: uranek_sprite_texture,
+                        texture_atlas: Some(TextureAtlas {
+                            layout: uranek_atlas_layout,
+                            index: uranek_idle_idx,
+                        }),
+                        ..default()
+                    },
+                    Node {
+                        width: Val::Px(220.0),
+                        height: Val::Px(220.0),
+                        ..default()
+                    },
+                    uranek::Uranek,
+                    uranek::UranekIdle,
+                ),
+                // Speech bubble (initially visible with default text)
+                (
+                    Node {
+                        width: Val::Px(420.0),
+                        min_height: Val::Px(80.0),
+                        padding: UiRect::all(Val::Px(16.0)),
+                        border: UiRect::all(Val::Px(2.0)),
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgba(0.05, 0.05, 0.08, 0.85)),
+                    BorderRadius::all(Val::Px(12.0)),
+                    BorderColor::all(Color::srgb(0.6, 0.9, 1.0)),
+                    uranek::UranekBubble,
+                    children![(
+                        Text::new("Uranek: Pilnujmy, żeby ten reaktor trzymał się w ryzach."),
+                        TextFont {
+                            font,
+                            font_size: 22.0,
+                            ..default()
+                        },
+                        TextColor(Color::WHITE),
+                        uranek::UranekText,
+                    ),],
+                ),
+            ],
+        ));
+    }
 }
 
 fn update_money_display(
@@ -273,4 +312,3 @@ fn update_money_display(
         **text = format!("${:.0}", environment.money);
     }
 }
-

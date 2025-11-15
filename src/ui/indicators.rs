@@ -5,21 +5,21 @@ use bevy::{
 };
 
 use crate::{
+    FONT_REGULAR,
     simulation::{
         EnvironmentState, REACTOR_TEMP_LIMIT, ReactorState, TURBINE_TEMP_LIMIT, TurbineState,
     },
-    FONT_REGULAR,
 };
 
 // Use larger base sizes for high DPI displays
-const GAUGE_SIZE: f32 = 120.0;
-const GAUGE_BORDER: f32 = 8.0;
-const GAUGE_TITLE_FONT_SIZE: f32 = 16.0;
-const GAUGE_VALUE_FONT_SIZE: f32 = 20.0;
-const GAUGE_DURABILITY_FONT_SIZE: f32 = 14.0;
-const GAUGE_CONTAINER_GAP: f32 = 8.0;
-const GAUGE_GRID_GAP: f32 = 24.0;
-const GAUGE_GRID_PADDING: f32 = 20.0;
+const GAUGE_SIZE: f32 = 104.0;
+const GAUGE_BORDER: f32 = 6.0;
+const GAUGE_TITLE_FONT_SIZE: f32 = 14.0;
+const GAUGE_VALUE_FONT_SIZE: f32 = 18.0;
+const GAUGE_DURABILITY_FONT_SIZE: f32 = 12.0;
+const GAUGE_CONTAINER_GAP: f32 = 6.0;
+const GAUGE_GRID_GAP: f32 = 18.0;
+const GAUGE_GRID_PADDING: f32 = 16.0;
 
 #[derive(Component)]
 pub struct ReactorTempIndicator;
@@ -31,7 +31,7 @@ pub struct ReactorPressureIndicator;
 pub struct TurbineTempIndicator;
 
 #[derive(Component)]
-pub struct PowerIndicator;
+pub struct FuelIndicator;
 
 #[derive(Component)]
 pub struct GaugeBorder {
@@ -55,17 +55,15 @@ pub enum GaugeType {
     ReactorTemp,
     ReactorPressure,
     TurbineTemp,
-    Power,
+    FuelLeft,
 }
 
 pub fn gauge_grid(font: Handle<Font>) -> impl Bundle {
     (
         Node {
-            display: Display::Grid,
-            grid_template_columns: vec![GridTrack::auto(), GridTrack::auto()],
-            grid_template_rows: vec![GridTrack::auto(), GridTrack::auto()],
-            column_gap: Val::Px(GAUGE_GRID_GAP),
+            flex_direction: FlexDirection::Column,
             row_gap: Val::Px(GAUGE_GRID_GAP),
+            align_items: AlignItems::Center,
             padding: UiRect::all(Val::Px(GAUGE_GRID_PADDING)),
             ..default()
         },
@@ -87,7 +85,13 @@ pub fn gauge_grid(font: Handle<Font>) -> impl Bundle {
                 font.clone()
             ),
             turbine_gauge(font.clone()),
-            gauge("Moc", "0 MW", PowerIndicator, GaugeType::Power, font),
+            gauge(
+                "Fuel Left",
+                "100%",
+                FuelIndicator,
+                GaugeType::FuelLeft,
+                font,
+            ),
         ],
     )
 }
@@ -230,7 +234,7 @@ pub fn update_indicators(
     reactor_temp: Query<Entity, With<ReactorTempIndicator>>,
     reactor_pressure: Query<Entity, With<ReactorPressureIndicator>>,
     turbine_temp: Query<Entity, With<TurbineTempIndicator>>,
-    power: Query<Entity, With<PowerIndicator>>,
+    fuel: Query<Entity, With<FuelIndicator>>,
     durability_texts: Query<Entity, With<TurbineDurabilityText>>,
 ) {
     if !(reactor.is_changed() || turbine.is_changed() || environment.is_changed()) {
@@ -255,9 +259,9 @@ pub fn update_indicators(
         }
     }
 
-    for entity in power.iter() {
+    for entity in fuel.iter() {
         if let Ok(mut text) = texts.get_mut(entity) {
-            **text = format!("{:.0} MW", environment.power_generated);
+            **text = format!("{:.0}%", environment.fuel_left * 100.0);
         }
     }
 
@@ -277,9 +281,16 @@ pub fn update_gauge_colors(
     time: Res<Time>,
 ) {
     for (gauge_border, mut border_color, mut blink_timer) in gauges.iter_mut() {
-        // Power gauge always stays green
-        if gauge_border.gauge_type == GaugeType::Power {
-            border_color.set_all(Color::srgb(0.2, 0.8, 0.2));
+        if gauge_border.gauge_type == GaugeType::FuelLeft {
+            let fuel = environment.fuel_left;
+            let color = if fuel <= 0.25 {
+                Color::srgb(0.9, 0.2, 0.2)
+            } else if fuel <= 0.5 {
+                Color::srgb(0.95, 0.8, 0.25)
+            } else {
+                Color::srgb(0.2, 0.8, 0.2)
+            };
+            border_color.set_all(color);
             continue;
         }
 
@@ -287,7 +298,7 @@ pub fn update_gauge_colors(
             GaugeType::ReactorTemp => (reactor.temperature, REACTOR_TEMP_LIMIT),
             GaugeType::ReactorPressure => (reactor.pressure, 160.0), // bar
             GaugeType::TurbineTemp => (turbine.temperature, TURBINE_TEMP_LIMIT),
-            GaugeType::Power => (environment.power_generated, 1000.0), // Max power (unused)
+            GaugeType::FuelLeft => unreachable!("Fuel gauge handled separately"),
         };
 
         let percentage = current_value / limit;

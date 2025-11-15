@@ -1,5 +1,5 @@
+use crate::{FONT_REGULAR, GameState, simulation::GameOverReason};
 use bevy::prelude::*;
-use crate::{GameState, simulation::GameOverReason, FONT_REGULAR};
 
 #[derive(Component)]
 struct GameOverReasonText;
@@ -15,7 +15,10 @@ pub struct GameOverPlugin;
 impl Plugin for GameOverPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::GameOver), setup_game_over_ui)
-        .add_systems(Update, handle_return_button.run_if(in_state(GameState::GameOver)));
+            .add_systems(
+                Update,
+                handle_return_button.run_if(in_state(GameState::GameOver)),
+            );
     }
 }
 

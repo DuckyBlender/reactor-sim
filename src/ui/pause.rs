@@ -1,19 +1,18 @@
 use bevy::prelude::*;
 
-use crate::{GameState, FONT_REGULAR, menu::main_menu::ReturnToMenuButton};
+use crate::{FONT_REGULAR, GameState, menu::main_menu::ReturnToMenuButton};
 
 pub struct PausePlugin;
 
 impl Plugin for PausePlugin {
     fn build(&self, app: &mut App) {
-        app
-        .init_resource::<PauseState>()
-        .add_systems(OnEnter(GameState::Paused), setup_pause_menu)
-        .add_systems(Update, handle_pause_input)
-        .add_systems(
-            Update,
-        (handle_unpause_input, handle_return_button).run_if(in_state(GameState::Paused)),
-        );
+        app.init_resource::<PauseState>()
+            .add_systems(OnEnter(GameState::Paused), setup_pause_menu)
+            .add_systems(Update, handle_pause_input)
+            .add_systems(
+                Update,
+                (handle_unpause_input, handle_return_button).run_if(in_state(GameState::Paused)),
+            );
     }
 }
 
@@ -57,7 +56,7 @@ fn setup_pause_menu(
     if pause_state.previous_state.is_none() {
         pause_state.previous_state = Some(GameState::InGame);
     }
-    
+
     commands.spawn((Camera2d, DespawnOnExit(GameState::Paused)));
 
     let font = asset_server.load(FONT_REGULAR);

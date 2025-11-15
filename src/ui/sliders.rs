@@ -170,7 +170,7 @@ pub fn slider_panel(
                             ),
                             create_reactivity_slider(reactivity_value),
                             (
-                                Text::new(format!("Internal: {}%", reactivity_value as i32)),
+                                Text::new(format!("Real: {}%", reactivity_value as i32)),
                                 TextFont {
                                     font: font.clone(),
                                     font_size: SLIDER_INTERNAL_FONT_SIZE,
@@ -240,7 +240,7 @@ pub fn slider_panel(
                             ),
                             create_turbine_slider(turbine_value),
                             (
-                                Text::new(format!("Internal: {}%", turbine_value as i32)),
+                                Text::new(format!("{}%", turbine_value as i32)),
                                 TextFont {
                                     font: font.clone(),
                                     font_size: SLIDER_INTERNAL_FONT_SIZE,
@@ -404,11 +404,10 @@ pub fn update_applied_value_text(
     }
 
     for mut text in reactivity_applied_texts.iter_mut() {
-        **text = format!("Internal: {:.1}%", controls.reactivity_applied);
+        **text = format!("Real: {:.1}%", controls.reactivity_applied);
     }
 
     for mut text in turbine_applied_texts.iter_mut() {
-        **text = format!("Internal: {:.1}%", controls.turbine_applied);
+        **text = format!("{:.1}%", controls.turbine_applied);
     }
 }
-

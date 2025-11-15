@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 use rand::Rng;
 
-use crate::{
-    simulation::{EnvironmentState, ReactorState, TurbineState, REACTOR_TEMP_LIMIT, REACTOR_PRESSURE_LIMIT, TURBINE_TEMP_LIMIT},
+use crate::simulation::{
+    EnvironmentState, REACTOR_PRESSURE_LIMIT, REACTOR_TEMP_LIMIT, ReactorState, TURBINE_TEMP_LIMIT,
+    TurbineState,
 };
 
 #[derive(Component)]
@@ -98,7 +99,6 @@ pub fn update_uranek_idle_animation(
     }
 }
 
-
 #[allow(clippy::too_many_arguments)]
 pub fn update_uranek_dialogue(
     time: Res<Time>,
@@ -158,7 +158,9 @@ pub fn update_uranek_dialogue(
                 "Reaktor robi się bardzo ciepły! To nie jest normalne!",
                 "To nie jest grill! Nie smażymy tu kiełbasek!",
             ];
-            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
+            message = Some(uranek_prefix(
+                messages[rand::rng().random_range(0..messages.len())],
+            ));
         } else if reactor_ratio >= 0.90 {
             // Deep red zone (90-95%)
             let messages = [
@@ -173,7 +175,9 @@ pub fn update_uranek_dialogue(
                 "Reaktor świeci się jak choinka, ale to nie święta!",
                 "Moja emerytura jest za 30 lat! Nie psuj mi planów!",
             ];
-            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
+            message = Some(uranek_prefix(
+                messages[rand::rng().random_range(0..messages.len())],
+            ));
         } else if reactor_ratio >= 0.80 {
             // Red zone (80-90%)
             let messages = [
@@ -190,7 +194,9 @@ pub fn update_uranek_dialogue(
                 "Moja cierpliwość też się kończy! Obniż reaktywność!",
                 "To nie jest wyścig! Kto pierwszy do meltdownu nie wygrywa!",
             ];
-            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
+            message = Some(uranek_prefix(
+                messages[rand::rng().random_range(0..messages.len())],
+            ));
         } else if reactor_ratio >= 0.60 {
             // Yellow zone (60-80%)
             let messages = [
@@ -200,7 +206,9 @@ pub fn update_uranek_dialogue(
                 "Zaczyna robić się ciepło. Trzymaj rękę na pulsie.",
                 "Żółta strefa - jeszcze bezpieczna, ale uważaj.",
             ];
-            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
+            message = Some(uranek_prefix(
+                messages[rand::rng().random_range(0..messages.len())],
+            ));
         } else if reactor_pressure_ratio >= 0.90 {
             // High pressure warning
             let messages = [
@@ -212,7 +220,9 @@ pub fn update_uranek_dialogue(
                 "Ciśnienie rośnie szybciej niż moje ciśnienie krwi!",
                 "Reaktor puchnie jak balon! To nie jest dobry znak!",
             ];
-            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
+            message = Some(uranek_prefix(
+                messages[rand::rng().random_range(0..messages.len())],
+            ));
         } else if reactor_pressure_ratio >= 0.80 {
             // High pressure warning
             let messages = [
@@ -222,7 +232,9 @@ pub fn update_uranek_dialogue(
                 "Reaktor zaczyna się denerwować. Uspokój go!",
                 "To nie jest konkurs na najwyższe ciśnienie!",
             ];
-            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
+            message = Some(uranek_prefix(
+                messages[rand::rng().random_range(0..messages.len())],
+            ));
         } else if turbine_ratio >= 0.95 {
             // Turbine critical
             let messages = [
@@ -230,7 +242,9 @@ pub fn update_uranek_dialogue(
                 "Turbina w strefie krytycznej! Zmniejsz przepływ!",
                 "Turbina zaraz się rozleci! Mniej pary!",
             ];
-            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
+            message = Some(uranek_prefix(
+                messages[rand::rng().random_range(0..messages.len())],
+            ));
         } else if turbine_ratio >= 0.80 {
             // Turbine warning
             let messages = [
@@ -238,7 +252,9 @@ pub fn update_uranek_dialogue(
                 "Turbina się przegrzewa. Zmniejsz moc turbiny.",
                 "Turbina nie lubi takich temperatur. Przygaś trochę.",
             ];
-            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
+            message = Some(uranek_prefix(
+                messages[rand::rng().random_range(0..messages.len())],
+            ));
         } else if environment.money > 2000.0 {
             // Positive feedback - high earnings
             let messages = [
@@ -248,7 +264,9 @@ pub fn update_uranek_dialogue(
                 "Jesteś dobrym operatorem. Może nawet dostaniesz podwyżkę!",
                 "Widzę, że ten tutorial coś dał! Dobra robota.",
             ];
-            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
+            message = Some(uranek_prefix(
+                messages[rand::rng().random_range(0..messages.len())],
+            ));
         } else if reactor_ratio < 0.40 && environment.money > 500.0 {
             // Low temperature, decent earnings
             let messages = [
@@ -256,13 +274,16 @@ pub fn update_uranek_dialogue(
                 "Stabilna praca, stabilna kasa. Tak to ma wyglądać.",
                 "W końcu mogę sobie spokojnie wypić kawę.",
             ];
-            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
+            message = Some(uranek_prefix(
+                messages[rand::rng().random_range(0..messages.len())],
+            ));
         }
     }
 
     // Update sprite based on reactor temperature or pressure zones (red/black = hot sprite)
     if let Ok(mut image_node) = sprite_query.single_mut()
-        && let Some(atlas) = &mut image_node.texture_atlas {
+        && let Some(atlas) = &mut image_node.texture_atlas
+    {
         // Use hot sprite when reactor temperature OR pressure is in danger zone (>= 80%)
         let is_danger_zone = reactor_ratio >= 0.80 || reactor_pressure_ratio >= 0.80;
         if is_danger_zone {

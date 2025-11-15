@@ -1,5 +1,5 @@
+use crate::{FONT_REGULAR, GameState};
 use bevy::prelude::*;
-use crate::{GameState, FONT_REGULAR};
 
 #[derive(Component)]
 struct BackButton;
@@ -9,11 +9,10 @@ pub struct CreditsMenuPlugin;
 impl Plugin for CreditsMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Credits), setup_credits)
-        .add_systems(
-            Update,
-            (handle_back_button)
-                .run_if(in_state(GameState::Credits)),
-        );
+            .add_systems(
+                Update,
+                (handle_back_button).run_if(in_state(GameState::Credits)),
+            );
     }
 }
 
@@ -31,7 +30,7 @@ fn handle_back_button(
 
 fn setup_credits(mut commands: Commands, asset_server: Res<AssetServer>) {
     let font = asset_server.load(FONT_REGULAR);
-    
+
     commands.spawn((Camera2d, DespawnOnExit(GameState::Credits)));
     commands
         .spawn((
@@ -101,4 +100,3 @@ Ignacy Sztykiel - Developer, Sound & Visual Designer
                 });
         });
 }
-

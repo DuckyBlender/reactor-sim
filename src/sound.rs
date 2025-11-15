@@ -20,12 +20,10 @@ impl Default for AudioSettings {
     }
 }
 
-#[derive(Resource)]
-#[derive(Default)]
+#[derive(Resource, Default)]
 struct HissingState {
     pub active: bool,
 }
-
 
 #[derive(Component)]
 struct ExplosionSound;
@@ -34,8 +32,7 @@ pub struct AudioPlugin;
 
 impl Plugin for AudioPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .insert_resource(AudioSettings::default())
+        app.insert_resource(AudioSettings::default())
             .insert_resource(HissingState::default())
             .add_systems(OnEnter(GameState::InGame), setup_audio)
             .add_systems(
@@ -44,7 +41,8 @@ impl Plugin for AudioPlugin {
                     update_audio_volume,
                     create_hissing_system,
                     hissing_activating_system,
-                ).run_if(in_state(GameState::InGame)),
+                )
+                    .run_if(in_state(GameState::InGame)),
             )
             .add_systems(OnEnter(GameState::GameOver), explosion_audio_system);
     }
@@ -63,11 +61,7 @@ fn create_background_music(asset_server: Res<AssetServer>) -> impl Bundle {
     )
 }
 
-
-fn update_audio_volume(
-    settings: Res<AudioSettings>,
-    mut query: Query<&mut AudioSink>
-) {
+fn update_audio_volume(settings: Res<AudioSettings>, mut query: Query<&mut AudioSink>) {
     for mut sink in query.iter_mut() {
         sink.set_volume(Linear(settings.volume));
     }
@@ -76,14 +70,14 @@ fn update_audio_volume(
 fn explosion_audio_system(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    settings: Res<AudioSettings>
+    settings: Res<AudioSettings>,
 ) {
     commands.spawn(create_explosion_sound(asset_server, settings));
 }
 
 fn create_explosion_sound(
     asset_server: Res<AssetServer>,
-    settings: Res<AudioSettings>
+    settings: Res<AudioSettings>,
 ) -> impl Bundle {
     (
         DespawnOnExit(GameState::GameOver),
@@ -126,10 +120,7 @@ fn create_hissing_system(
     }
 }
 
-fn hissing_activating_system(
-    reactor: Res<ReactorState>,
-    mut hissing: ResMut<HissingState>,
-) {
+fn hissing_activating_system(reactor: Res<ReactorState>, mut hissing: ResMut<HissingState>) {
     let reactor_pct = reactor.pressure / REACTOR_PRESSURE_LIMIT;
     let should_hiss = reactor_pct >= 0.70;
 
