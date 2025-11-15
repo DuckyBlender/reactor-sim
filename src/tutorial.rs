@@ -4,6 +4,7 @@ use crate::{
     ui::indicators::gauge_grid,
 };
 use bevy::prelude::*;
+use rand::Rng;
 
 
 
@@ -433,7 +434,9 @@ fn advance_tutorial_on_space(
     tutorial_state.step_index += 1;
 
     // play single-shot talking audio for this step (while we're in tutorial)
-    let handle: Handle<AudioSource> = asset_server.load("sound/uranek_talking.mp3");
+    let random_num = rand::thread_rng().gen_range(1..=10);
+    let sound_path = format!("sound/talking/talking_{:03}.mp3", random_num);
+    let handle: Handle<AudioSource> = asset_server.load(sound_path);
     commands.spawn((
         AudioPlayer::new(handle),
         PlaybackSettings::ONCE,
