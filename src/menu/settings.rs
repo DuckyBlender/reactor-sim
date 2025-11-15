@@ -38,7 +38,7 @@ fn handle_back_button(
 ) {
     for interaction in &interaction_query {
         if *interaction == Interaction::Pressed {
-            info!("State change: Credits -> MainMenu");
+            info!("State change: Settings -> MainMenu");
             next_state.set(GameState::MainMenu);
         }
     }

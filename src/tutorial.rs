@@ -618,7 +618,7 @@ fn update_highlight_box(
     for (mut bg, mut border, highlight) in highlight_q.iter_mut() {
         let active = match (step, &highlight.kind) {
             // Gauges: glow only while he explicitly talks about the reactor & turbine gauges
-            (2 | 3 | 4 | 5, HighlightKind::Gauge) => true,
+            (2..=5, HighlightKind::Gauge) => true,
             // Reactivity slider: when he explains the reactivity control
             (6, HighlightKind::Reactivity) => true,
             // Turbine slider: when he explains the turbine control
