@@ -13,7 +13,7 @@ use crate::{
 const PARALLAX_FACTOR: f32 = 0.03;
 const CAMERA_BASE_POS: Vec3 = Vec3::new(0.0, 5.0, 12.0);
 const CAMERA_LOOK_AT: Vec3 = Vec3::new(0.0, 4.0, 0.0);
-const REFUEL_EXTRA_LIFT: f32 = 6.0;
+const REFUEL_EXTRA_LIFT: f32 = 10.0;
 const REFUEL_RAISE_DURATION: f32 = 0.8;
 const REFUEL_HOLD_DURATION: f32 = 1.0;
 const REFUEL_LOWER_DURATION: f32 = 0.8;

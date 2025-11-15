@@ -53,10 +53,9 @@ impl Default for ReactorState {
 
 #[derive(Resource, Debug)]
 pub struct TurbineState {
-    pub speed: f32,              // RPM * 100
-    pub temperature: f32,        // °C
-    pub target_temperature: f32, // °C
-    pub durability: f32,         // 0-100
+    pub speed: f32,        // RPM * 100
+    pub temperature: f32,  // °C
+    pub durability: f32,   // 0-100
     pub is_destroyed: bool,
 }
 
@@ -65,7 +64,6 @@ impl Default for TurbineState {
         Self {
             speed: 0.0,
             temperature: ROOM_TEMPERATURE,
-            target_temperature: ROOM_TEMPERATURE,
             durability: 100.0,
             is_destroyed: false,
         }
@@ -82,7 +80,7 @@ pub struct EnvironmentState {
 impl Default for EnvironmentState {
     fn default() -> Self {
         Self {
-            money: 0.0,
+            money: 1000.0,
             power_generated: 0.0,
             fuel_left: 1.0,
         }
@@ -140,42 +138,34 @@ fn simulate_reactor(
     let fuel_energy = fuel_energy_factor(environment.fuel_left);
     let fuel_rate = fuel_rate_factor(environment.fuel_left);
 
-    // Exponential temperature growth: higher reactivity causes exponential increase
-    // Temperature can now go beyond the explosion limit (no artificial cap)
+    // Nuclear reaction generates heat based on reactivity
+    // Exponential growth: higher reactivity causes exponential temperature increase
     let exp_factor = (reactivity * 2.5).exp();
-    // Scale exponentially without capping
-    let temperature_target = ROOM_TEMPERATURE + (exp_factor - 1.0) * 150.0 * fuel_energy;
+    let heat_generation_target = ROOM_TEMPERATURE + (exp_factor - 1.0) * 150.0 * fuel_energy;
 
-    // Water flow through turbine cools the reactor
+    // Water flow removes heat from reactor
     let flow_rate = (controls.turbine_applied / 100.0).clamp(0.0, 1.0);
-    let cooling_effect = flow_rate * 0.15;
+    let heat_removed_by_water = flow_rate * (reactor.temperature - ROOM_TEMPERATURE) * 0.4;
+    
+    // Final temperature target balances heat generation and water cooling
+    let temperature_target = heat_generation_target - heat_removed_by_water;
 
-    // When water flows, reactor cools toward a lower equilibrium
-    let effective_target =
-        temperature_target - (flow_rate * (reactor.temperature - ROOM_TEMPERATURE) * 0.3);
-
-    // Exponential rate increase: temperature changes faster as it gets higher
+    // Temperature change rate increases with temperature (positive feedback)
     let temp_normalized = ((reactor.temperature - ROOM_TEMPERATURE) / 1000.0).max(0.0);
-    let base_rate = 0.08;
-    // Rate increases exponentially with temperature (positive feedback loop)
     let rate_multiplier = (1.0 + (temp_normalized * 2.0).exp() * 0.5) * fuel_rate;
-    let change_rate = (base_rate + cooling_effect) * rate_multiplier;
+    let change_rate = 0.016 * rate_multiplier; // 5x slower natural cooldown
 
-    reactor.temperature = smooth_towards(reactor.temperature, effective_target, change_rate, delta);
+    reactor.temperature = smooth_towards(reactor.temperature, temperature_target, change_rate, delta);
 
-    // Pressure increases exponentially with reactivity
-    // Reduced coupling with temperature so pressure doesn't limit temperature growth
-    // No artificial cap - can exceed explosion limit
-    let pressure_base = reactivity * 150.0 * fuel_energy;
-    let pressure_exp_boost = ((reactivity * 2.0).exp() - 1.0) * 20.0 * fuel_energy;
-    // Small temperature contribution (reduced from 0.05 to 0.01 to reduce coupling)
-    let temp_pressure_contribution =
-        (reactor.temperature - 800.0).max(0.0) * 0.01 * fuel_energy;
-    let pressure_target = pressure_base + pressure_exp_boost + temp_pressure_contribution;
+    // Pressure increases with both reactivity and temperature
+    let pressure_from_reactivity = reactivity * 15.0 * fuel_energy;
+    let pressure_exponential_boost = ((reactivity * 1.8).exp() - 1.0) * 2.5 * fuel_energy;
+    let pressure_from_temperature = (reactor.temperature - 800.0).max(0.0) * 0.015 * fuel_energy;
+    let pressure_target = pressure_from_reactivity + pressure_exponential_boost + pressure_from_temperature;
 
     // Pressure change rate increases with reactivity and current pressure
     let pressure_normalized = (reactor.pressure / 100.0).max(0.0);
-    let pressure_rate = (1.2 + reactivity * 1.8 + pressure_normalized * 0.4) * fuel_rate;
+    let pressure_rate = (0.04 + reactivity * 0.08 + pressure_normalized * 0.01) * fuel_rate; // Much slower pressure buildup
     reactor.pressure = smooth_towards(reactor.pressure, pressure_target, pressure_rate, delta);
 }
 
@@ -191,77 +181,75 @@ fn simulate_turbine(
     // If turbine is destroyed, no operation
     if turbine.is_destroyed {
         turbine.speed = smooth_towards(turbine.speed, 0.0, 2.0, delta);
-        let power_target = 0.0;
-        environment.power_generated =
-            smooth_towards(environment.power_generated, power_target, 2.0, delta);
-        turbine.temperature = smooth_towards(turbine.temperature, ROOM_TEMPERATURE, 0.24, delta);
+        environment.power_generated = smooth_towards(environment.power_generated, 0.0, 2.0, delta);
+        turbine.temperature = smooth_towards(turbine.temperature, ROOM_TEMPERATURE, 0.075, delta);
         return;
     }
 
     let flow_rate = (controls.turbine_applied / 100.0).clamp(0.0, 1.0);
 
-    // When flow is active, water carries heat from reactor to turbine
-    if flow_rate > 0.01 {
-        // Water picks up heat from reactor and carries it to turbine
-        // Turbine can't be hotter than reactor
-        turbine.target_temperature = reactor.temperature.min(reactor.temperature);
-
-        // Map 0-100% slider to 0.003-0.048 transfer rate
-        let transfer_speed = 0.003 + flow_rate * 0.045;
-
-        // Smoothly move turbine temperature toward reactor temperature
-        turbine.temperature = smooth_towards(
-            turbine.temperature,
-            turbine.target_temperature,
-            transfer_speed,
-            delta,
-        );
-    } else {
-        // No water flow - turbine cools naturally via water evaporation (5x faster)
-        turbine.temperature = smooth_towards(turbine.temperature, ROOM_TEMPERATURE, 0.24, delta);
-    }
+    // Water flow carries heat from reactor to turbine
+    // Heat transfer rate depends on: flow rate, temperature difference, and transfer efficiency
+    let heat_transfer_rate = flow_rate * 0.36; // How quickly water transfers heat (80% faster)
+    let heat_carried_by_water = reactor.temperature * flow_rate * 0.95; // Heat capacity of water flow
+    
+    // Turbine naturally cools toward room temperature (always active)
+    const NATURAL_COOLING_RATE: f32 = 0.075; // 2x slower natural cooldown
+    
+    // Calculate equilibrium temperature:
+    // Heat input from water flow vs natural cooling
+    // When these balance, turbine reaches steady state
+    let heat_input_target = ROOM_TEMPERATURE + heat_carried_by_water;
+    
+    // Apply both heating (from water) and natural cooling
+    // First apply water heating
+    turbine.temperature = smooth_towards(
+        turbine.temperature,
+        heat_input_target,
+        heat_transfer_rate,
+        delta,
+    );
+    
+    // Then apply natural cooling (always active)
+    turbine.temperature = smooth_towards(
+        turbine.temperature,
+        ROOM_TEMPERATURE,
+        NATURAL_COOLING_RATE,
+        delta,
+    );
 
     // Calculate turbine speed based on flow rate
-    // Speed represents mechanical rotation from water flow
-    let torque = flow_rate * 2000.0;
-    turbine.speed = smooth_towards(turbine.speed, torque, 2.0, delta);
+    let target_speed = flow_rate * 2000.0;
+    turbine.speed = smooth_towards(turbine.speed, target_speed, 2.0, delta);
 
-    // Power generation is based on turbine TEMPERATURE, not just speed
-    // Sweet spot is in yellow-red zone (60-95% of TURBINE_TEMP_LIMIT = 174-275.5°C)
+    // Power generation based on turbine temperature
+    // Sweet spot: 60-85% of TURBINE_TEMP_LIMIT (174-246°C)
     let temp_percentage = (turbine.temperature / TURBINE_TEMP_LIMIT).clamp(0.0, 1.0);
 
-    // Power efficiency curve: peaks around 70-85% temp (yellow-red zone)
     let power_efficiency = if temp_percentage < 0.60 {
-        // Below 60%: low efficiency, ramping up
+        // Below 60%: low efficiency
         temp_percentage / 0.60 * 0.7
     } else if temp_percentage < 0.85 {
         // Sweet spot (60-85%): high efficiency
         0.7 + (temp_percentage - 0.60) / 0.25 * 0.3
     } else {
-        // Above 85%: efficiency drops due to stress and damage
+        // Above 85%: efficiency drops due to stress
         1.0 - (temp_percentage - 0.85) / 0.15 * 0.3
     };
 
-    // Power generation based on temperature efficiency
-    // Turbine strength reduced to 10% of original
-    let base_power = power_efficiency * 100.0;
-    let flow_multiplier = if flow_rate > 0.01 { 1.0 } else { 0.5 }; // Reduced multiplier when no flow
-
-    // Generator requires minimum 100°C to produce power
-    if turbine.temperature < 100.0 {
+    // Power generation requires minimum temperature and flow
+    if turbine.temperature < 100.0 || flow_rate < 0.01 {
         environment.power_generated = 0.0;
     } else {
-        environment.power_generated = base_power * flow_multiplier;
+        let base_power = power_efficiency * 100.0;
+        environment.power_generated = base_power;
     }
 
-    // Money generation: power = money directly
+    // Money generation from power
     environment.money += environment.power_generated * delta * 0.1;
 
-    // Durability system: damage when in red zone (80-95% of limit)
-    let temp_percentage = turbine.temperature / TURBINE_TEMP_LIMIT;
+    // Durability damage in red zone (80%+ of limit)
     if temp_percentage >= 0.80 {
-        // Damage increases the deeper into red zone
-        // At 80% = 0 damage, at 95% = 5 damage/sec
         let damage_factor = ((temp_percentage - 0.80) / 0.15).clamp(0.0, 1.0);
         let damage = damage_factor * 5.0 * delta;
         turbine.durability = (turbine.durability - damage).max(0.0);

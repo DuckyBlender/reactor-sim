@@ -25,6 +25,7 @@ pub struct UranekState {
     pub last_comment_time: f32,
     pub last_default_text_time: f32,
     pub talk_timeout: f32,
+    pub last_ok_message_time: f32,
 }
 
 impl Default for UranekState {
@@ -35,6 +36,7 @@ impl Default for UranekState {
             last_comment_time: -999.0,
             last_default_text_time: 0.0,
             talk_timeout: 0.0,
+            last_ok_message_time: -999.0,
         }
     }
 }
@@ -134,6 +136,7 @@ pub fn update_uranek_dialogue(
 
     // 3) Determine if Uranek has something new to say
     const COMMENT_COOLDOWN: f32 = 6.0;
+    const OK_MESSAGE_COOLDOWN: f32 = 20.0;
     let mut message: Option<String> = None;
 
     let reactor_ratio = reactor.temperature / REACTOR_TEMP_LIMIT;
@@ -255,28 +258,33 @@ pub fn update_uranek_dialogue(
             message = Some(uranek_prefix(
                 messages[rand::rng().random_range(0..messages.len())],
             ));
-        } else if environment.money > 2000.0 {
-            // Positive feedback - high earnings
-            let messages = [
-                "Świetnie! Ta elektrownia drukuje pieniądze.",
-                "Doskonała robota! Wszystko działa jak należy.",
-                "Reaktor działa stabilnie. Trzymaj tak dalej!",
-                "Jesteś dobrym operatorem. Może nawet dostaniesz podwyżkę!",
-                "Widzę, że ten tutorial coś dał! Dobra robota.",
-            ];
-            message = Some(uranek_prefix(
-                messages[rand::rng().random_range(0..messages.len())],
-            ));
-        } else if reactor_ratio < 0.40 && environment.money > 500.0 {
-            // Low temperature, decent earnings
-            let messages = [
-                "Reaktor działa spokojnie. Wszystko w porządku.",
-                "Stabilna praca, stabilna kasa. Tak to ma wyglądać.",
-                "W końcu mogę sobie spokojnie wypić kawę.",
-            ];
-            message = Some(uranek_prefix(
-                messages[rand::rng().random_range(0..messages.len())],
-            ));
+        } else if now - state.last_ok_message_time >= OK_MESSAGE_COOLDOWN {
+            // Only show "everything is ok" messages every 20 seconds
+            if environment.money > 2000.0 {
+                // Positive feedback - high earnings
+                let messages = [
+                    "Świetnie! Ta elektrownia drukuje pieniądze.",
+                    "Doskonała robota! Wszystko działa jak należy.",
+                    "Reaktor działa stabilnie. Trzymaj tak dalej!",
+                    "Jesteś dobrym operatorem. Może nawet dostaniesz podwyżkę!",
+                    "Widzę, że ten tutorial coś dał! Dobra robota.",
+                ];
+                message = Some(uranek_prefix(
+                    messages[rand::rng().random_range(0..messages.len())],
+                ));
+                state.last_ok_message_time = now;
+            } else if reactor_ratio < 0.40 && environment.money > 500.0 {
+                // Low temperature, decent earnings
+                let messages = [
+                    "Reaktor działa spokojnie. Wszystko w porządku.",
+                    "Stabilna praca, stabilna kasa. Tak to ma wyglądać.",
+                    "W końcu mogę sobie spokojnie wypić kawę.",
+                ];
+                message = Some(uranek_prefix(
+                    messages[rand::rng().random_range(0..messages.len())],
+                ));
+                state.last_ok_message_time = now;
+            }
         }
     }
 

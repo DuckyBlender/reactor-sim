@@ -59,6 +59,7 @@ enum HighlightKind {
     Gauge,
     Reactivity,
     Turbine,
+    RefuelButton,
 }
 
 fn setup_tutorial_scene(
@@ -196,7 +197,7 @@ fn advance_tutorial_on_space(
     ));
 
     // Exit after final step
-    if tutorial_state.step_index > 8 {
+    if tutorial_state.step_index > 11 {
         next_state.set(GameState::InGame);
     }
 }
@@ -236,16 +237,25 @@ fn update_tutorial_ui(
         2 => {
             "Ten pierwszy okrągły wskaźnik to temperatura REAKTORA.\n\nTrzymaj ją raczej w zielono-żółtej strefie."
         }
-        3 => "Ten drugi wskaźnik to temperatura TURBINY.\n\nOna robi z gorącej wody pieniądze.",
-        4 => " Za zimna - nie kręci. ",
-        5 => "Za gorąca - kręci się ostatni raz.",
+        3 => "Ten drugi wskaźnik to ciśnienie REAKTORA.\n\nZa wysokie = kabum!",
+        4 => "Ten trzeci wskaźnik to temperatura TURBINY.\n\nOna robi z gorącej wody pieniądze.",
+        5 => "Ten czwarty wskaźnik to poziom paliwa.\n\nPaliwo rozpada się z czasem - to rozpad promieniotwórczy.",
         6 => {
-            "Suwak REAKTYWNOŚCI steruje, jak mocno reaktor się rozgrzewa.\n\nW grze będziesz nim delikatnie kręcić."
+            "Paliwo ma PÓŁOKRES ROZPADU około 3 minuty.\n\nZa mało paliwa = słabsza reakcja i wolniejsze ogrzewanie."
         }
         7 => {
-            "Suwak TURBINY reguluje przepływ.\n\nWięcej przepływu = więcej mocy, ale też cieplejsza turbina."
+            "Żeby uzupełnić paliwo, użyj tego przycisku.\n\nKosztuje $250, ale daje świeże pręty paliwowe."
         }
         8 => {
+            "Suwak REAKTYWNOŚCI steruje, jak mocno reaktor się rozgrzewa.\n\nW grze będziesz nim delikatnie kręcić."
+        }
+        9 => {
+            "Suwak TURBINY reguluje przepływ.\n\nWięcej przepływu = więcej mocy, ale też cieplejsza turbina."
+        }
+        10 => {
+            "Pamiętaj o celu!\n\nMasz przetrwać jak najdłużej i zarobić jak najwięcej kasy.\nZobaczysz swoje pieniądze w prawym górnym rogu."
+        }
+        11 => {
             "I to tyle z teorii! Teraz przejdziemy do prawdziwej zmiany.\n\nNaciśnij [SPACJA], żeby odpalić prawdziwy reaktor."
         }
         _ => "Gotowy na prawdziwy reaktor?",
@@ -276,6 +286,7 @@ fn play_tutorial_sound(
     ));
 }
 
+#[allow(clippy::too_many_arguments)]
 fn add_tutorial_highlights(
     mut commands: Commands,
     reactivity_slider_query: Query<Entity, (With<ReactivitySlider>, Without<TutorialHighlight>)>,
@@ -287,12 +298,13 @@ fn add_tutorial_highlights(
             Without<TutorialHighlight>,
         ),
     >,
+    refuel_button_query: Query<Entity, (With<crate::ui::UpgradeButton>, Without<TutorialHighlight>)>,
     children: Query<&Children>,
     all_entities: Query<Entity>,
     existing_highlights: Query<Entity, With<TutorialHighlight>>,
 ) {
-    // Check if we already have all 3 highlights (gauge, reactivity, turbine)
-    if existing_highlights.iter().count() >= 3 {
+    // Check if we already have all 4 highlights (gauge, reactivity, turbine, refuel)
+    if existing_highlights.iter().count() >= 4 {
         return;
     }
 
@@ -300,6 +312,7 @@ fn add_tutorial_highlights(
     if gauge_border_query.is_empty()
         || reactivity_slider_query.is_empty()
         || turbine_slider_query.is_empty()
+        || refuel_button_query.is_empty()
     {
         return; // UI not ready yet, try again next frame
     }
@@ -428,6 +441,30 @@ fn add_tutorial_highlights(
             }
         }
     }
+
+    // Add highlight overlay to refuel button
+    if let Some(button_entity) = refuel_button_query.iter().next() {
+        commands.entity(button_entity).with_children(|button| {
+            button.spawn((
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: Val::Px(-16.0),
+                    right: Val::Px(-16.0),
+                    top: Val::Px(-16.0),
+                    bottom: Val::Px(-16.0),
+                    border: UiRect::all(Val::Px(3.0)),
+                    ..default()
+                },
+                BorderRadius::all(Val::Px(12.0)),
+                BorderColor::all(Color::NONE),
+                BackgroundColor(Color::srgba(1.0, 1.0, 0.3, 0.0)),
+                TutorialHighlight {
+                    kind: HighlightKind::RefuelButton,
+                },
+                DespawnOnExit(GameState::Tutorial),
+            ));
+        });
+    }
 }
 
 fn update_highlight_box(
@@ -443,12 +480,14 @@ fn update_highlight_box(
 
     for (mut bg, mut border, highlight) in highlight_q.iter_mut() {
         let active = match (step, &highlight.kind) {
-            // Gauges: glow only while he explicitly talks about the reactor & turbine gauges
-            (2..=5, HighlightKind::Gauge) => true,
+            // Gauges: glow while he talks about each gauge (steps 2-6)
+            (2..=6, HighlightKind::Gauge) => true,
+            // Refuel button: when he explains the refuel mechanism
+            (7, HighlightKind::RefuelButton) => true,
             // Reactivity slider: when he explains the reactivity control
-            (6, HighlightKind::Reactivity) => true,
+            (8, HighlightKind::Reactivity) => true,
             // Turbine slider: when he explains the turbine control
-            (7, HighlightKind::Turbine) => true,
+            (9, HighlightKind::Turbine) => true,
             _ => false,
         };
 

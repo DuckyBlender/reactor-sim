@@ -1,4 +1,3 @@
-use bevy::ui_widgets::{observe, Activate, Button as UiWidgetButton};
 use bevy::{input_focus::tab_navigation::TabGroup, prelude::*};
 
 use crate::{
@@ -43,6 +42,8 @@ impl Plugin for ReactorUiPlugin {
                     indicators::handle_turbine_destroyed,
                     indicators::rebuild_turbine_gauge_from_buyback,
                     update_money_display,
+                    update_refuel_button_state,
+                    handle_refuel_button,
                 )
                     .run_if(in_state(GameState::InGame).or(in_state(GameState::Tutorial))),
             )
@@ -151,7 +152,7 @@ fn setup_game_ui(
                 },
             ),
             (
-                UiWidgetButton,
+                Button,
                 Node {
                     width: Val::Px(260.0),
                     height: Val::Px(96.0),
@@ -169,19 +170,6 @@ fn setup_game_ui(
                 BorderColor::all(Color::srgba(0.95, 0.8, 0.3, 0.75)),
                 BackgroundColor(Color::srgba(0.08, 0.08, 0.12, 0.9)),
                 UpgradeButton,
-                observe(
-                    |_activate: On<Activate>,
-                     mut environment: ResMut<EnvironmentState>,
-                     mut refuel_animation: ResMut<RefuelAnimationState>| {
-                        const REFUEL_COST: f32 = 250.0;
-                        if environment.money < REFUEL_COST {
-                            return;
-                        }
-                        environment.money -= REFUEL_COST;
-                        environment.fuel_left = 1.0;
-                        refuel_animation.trigger();
-                    },
-                ),
                 children![
                     (
                         Text::new("Refuel Rods"),
@@ -310,5 +298,64 @@ fn update_money_display(
 
     for mut text in texts.iter_mut() {
         **text = format!("${:.0}", environment.money);
+    }
+}
+
+const REFUEL_COST: f32 = 250.0;
+
+#[allow(clippy::type_complexity)]
+fn update_refuel_button_state(
+    environment: Res<EnvironmentState>,
+    mut button_query: Query<
+        (&mut BackgroundColor, &mut BorderColor, &Interaction),
+        (With<UpgradeButton>, Changed<Interaction>),
+    >,
+) {
+    const NORMAL_BG: Color = Color::srgba(0.08, 0.08, 0.12, 0.9);
+    const HOVER_BG: Color = Color::srgba(0.12, 0.12, 0.16, 0.95);
+    const PRESS_BG: Color = Color::srgba(0.06, 0.06, 0.10, 1.0);
+    const DISABLED_BG: Color = Color::srgba(0.05, 0.05, 0.08, 0.7);
+    
+    const NORMAL_BORDER: Color = Color::srgba(0.95, 0.8, 0.3, 0.75);
+    const HOVER_BORDER: Color = Color::srgba(1.0, 0.9, 0.4, 0.9);
+    const PRESS_BORDER: Color = Color::srgba(0.85, 0.7, 0.25, 1.0);
+    const DISABLED_BORDER: Color = Color::srgba(0.3, 0.3, 0.3, 0.4);
+
+    for (mut bg_color, mut border_color, interaction) in button_query.iter_mut() {
+        let can_afford = environment.money >= REFUEL_COST;
+        
+        if !can_afford {
+            *bg_color = DISABLED_BG.into();
+            *border_color = BorderColor::all(DISABLED_BORDER);
+        } else {
+            match *interaction {
+                Interaction::Pressed => {
+                    *bg_color = PRESS_BG.into();
+                    *border_color = BorderColor::all(PRESS_BORDER);
+                }
+                Interaction::Hovered => {
+                    *bg_color = HOVER_BG.into();
+                    *border_color = BorderColor::all(HOVER_BORDER);
+                }
+                Interaction::None => {
+                    *bg_color = NORMAL_BG.into();
+                    *border_color = BorderColor::all(NORMAL_BORDER);
+                }
+            }
+        }
+    }
+}
+
+fn handle_refuel_button(
+    interaction_query: Query<&Interaction, (Changed<Interaction>, With<UpgradeButton>)>,
+    mut environment: ResMut<EnvironmentState>,
+    mut refuel_animation: ResMut<RefuelAnimationState>,
+) {
+    for interaction in &interaction_query {
+        if *interaction == Interaction::Pressed && environment.money >= REFUEL_COST {
+            environment.money -= REFUEL_COST;
+            environment.fuel_left = 1.0;
+            refuel_animation.trigger();
+        }
     }
 }
