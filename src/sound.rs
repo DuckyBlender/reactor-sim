@@ -83,7 +83,7 @@ fn create_explosion_sound(
         DespawnOnExit(GameState::GameOver),
         AudioPlayer::new(asset_server.load("sound/explosion.mp3")),
         PlaybackSettings {
-            volume: Linear((settings.volume - 0.5).clamp(0.0, 1.0)),
+            volume: Linear(settings.volume * 0.5),
             ..default()
         },
         ExplosionSound,
@@ -103,7 +103,7 @@ fn create_hissing_system(
             DespawnOnExit(GameState::InGame),
             AudioPlayer::new(asset_server.load("sound/hissing.mp3")),
             PlaybackSettings {
-                volume: Linear((settings.volume - 0.35).clamp(0.0, 1.0)),
+                volume: Linear(settings.volume),
                 mode: bevy::audio::PlaybackMode::Loop,
                 ..default()
             },
