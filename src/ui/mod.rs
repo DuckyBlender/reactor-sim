@@ -66,6 +66,9 @@ struct UranekAssets {
     idle_0: Handle<Image>,
     idle_1: Handle<Image>,
     talking_sound: Handle<AudioSource>,
+#[derive(Resource, Default)]
+pub struct PauseState {
+    pub previous_state: Option<GameState>,
 }
 
 pub struct ReactorUiPlugin;
@@ -73,6 +76,7 @@ pub struct ReactorUiPlugin;
 impl Plugin for ReactorUiPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(UranekState::default())
+        app.init_resource::<PauseState>()
             .add_systems(OnEnter(GameState::InGame), setup_game_ui)
             .add_systems(
                 Update,
@@ -269,8 +273,11 @@ fn update_money_display(
 fn handle_pause_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut next_state: ResMut<NextState<GameState>>,
+    current_state: Res<State<GameState>>,
+    mut pause_state: ResMut<PauseState>,
 ) {
     if keyboard.just_pressed(KeyCode::Escape) {
+        pause_state.previous_state = Some(*current_state.get());
         next_state.set(GameState::Paused);
     }
 }
@@ -278,13 +285,24 @@ fn handle_pause_input(
 fn handle_unpause_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut next_state: ResMut<NextState<GameState>>,
+    pause_state: Res<PauseState>,
 ) {
     if keyboard.just_pressed(KeyCode::Escape) {
-        next_state.set(GameState::InGame);
+        let resume_state = pause_state.previous_state.unwrap_or(GameState::InGame);
+        next_state.set(resume_state);
     }
 }
 
-fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup_pause_menu(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut pause_state: ResMut<PauseState>,
+) {
+    // Store the previous state if not already stored (fallback to InGame)
+    if pause_state.previous_state.is_none() {
+        pause_state.previous_state = Some(GameState::InGame);
+    }
+    
     commands.spawn((Camera2d, DespawnOnExit(GameState::Paused)));
 
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
@@ -301,7 +319,6 @@ fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.7)),
         Transform::default(),
-        GlobalTransform::default(),
         PauseMenu,
         children![
             (
@@ -316,6 +333,7 @@ fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                     margin: UiRect::bottom(Val::Px(40.0)),
                     ..default()
                 },
+                Transform::default(),
             ),
             (
                 Text::new("Press ESC to resume"),
@@ -329,6 +347,7 @@ fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                     margin: UiRect::bottom(Val::Px(60.0)),
                     ..default()
                 },
+                Transform::default(),
             ),
             (
                 Node {
@@ -375,8 +394,8 @@ fn setup_game_over_ui(
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
 
     let reason_text = match *game_over_reason {
-        GameOverReason::ReactorOverheat => "Reactor temperature exceeded safe limits",
-        GameOverReason::TurbineOverheat => "Turbine temperature exceeded safe limits",
+        GameOverReason::ReactorExplosion => "REACTOR EXPLOSION",
+        GameOverReason::ReactorMeltdown => "REACTOR MELTDOWN",
         GameOverReason::None => "Unknown cause",
     };
 

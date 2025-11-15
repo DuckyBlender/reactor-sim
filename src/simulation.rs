@@ -28,11 +28,10 @@ impl Plugin for SimulationPlugin {
     }
 }
 
-pub const REACTOR_TEMP_LIMIT: f32 = 1200.0; // °C
+pub const REACTOR_TEMP_LIMIT: f32 = 1200.0; // °C - explosion threshold
+pub const REACTOR_PRESSURE_LIMIT: f32 = 160.0; // bar - explosion threshold
 pub const TURBINE_TEMP_LIMIT: f32 = 290.0; // °C
 const ROOM_TEMPERATURE: f32 = 20.0; // °C
-const REACTOR_TEMP_MAX: f32 = 1200.0;
-const REACTOR_PRESSURE_MAX: f32 = 160.0;
 
 #[derive(Resource, Debug)]
 pub struct ReactorState {
@@ -97,8 +96,8 @@ pub struct ControlSettings {
 pub enum GameOverReason {
     #[default]
     None,
-    ReactorOverheat,
-    TurbineOverheat,
+    ReactorExplosion,  // Pressure exceeded limit
+    ReactorMeltdown,   // Temperature exceeded limit
 }
 
 impl Default for ControlSettings {
@@ -136,28 +135,49 @@ fn simulate_reactor(
     time: Res<Time>,
 ) {
     let delta = time.delta_secs();
-    let heat = (controls.reactivity_applied / 100.0).clamp(0.0, 1.2);
-    let temperature_target = ROOM_TEMPERATURE + heat * (REACTOR_TEMP_MAX - ROOM_TEMPERATURE);
+    let reactivity = (controls.reactivity_applied / 100.0).clamp(0.0, 1.2);
+    
+    // Exponential temperature growth: higher reactivity causes exponential increase
+    // Temperature can now go beyond the explosion limit (no artificial cap)
+    let exp_factor = (reactivity * 2.5).exp();
+    // Scale exponentially without capping
+    let temperature_target = ROOM_TEMPERATURE + (exp_factor - 1.0) * 150.0;
 
     // Water flow through turbine cools the reactor
     let flow_rate = (controls.turbine_applied / 100.0).clamp(0.0, 1.0);
     let cooling_effect = flow_rate * 0.15;
 
     // When water flows, reactor cools toward a lower equilibrium
-    // The more flow, the more it pulls heat away
     let effective_target =
         temperature_target - (flow_rate * (reactor.temperature - ROOM_TEMPERATURE) * 0.3);
+
+    // Exponential rate increase: temperature changes faster as it gets higher
+    let temp_normalized = ((reactor.temperature - ROOM_TEMPERATURE) / 1000.0).max(0.0);
+    let base_rate = 0.08;
+    // Rate increases exponentially with temperature (positive feedback loop)
+    let rate_multiplier = 1.0 + (temp_normalized * 2.0).exp() * 0.5;
+    let change_rate = (base_rate + cooling_effect) * rate_multiplier;
 
     reactor.temperature = smooth_towards(
         reactor.temperature,
         effective_target,
-        0.08 + cooling_effect,
+        change_rate,
         delta,
     );
 
-    let pressure_target =
-        heat * REACTOR_PRESSURE_MAX + ((reactor.temperature - 600.0).max(0.0) * 0.01);
-    reactor.pressure = smooth_towards(reactor.pressure, pressure_target, 1.5, delta);
+    // Pressure increases exponentially with reactivity
+    // Reduced coupling with temperature so pressure doesn't limit temperature growth
+    // No artificial cap - can exceed explosion limit
+    let pressure_base = reactivity * 150.0;
+    let pressure_exp_boost = ((reactivity * 2.0).exp() - 1.0) * 20.0;
+    // Small temperature contribution (reduced from 0.05 to 0.01 to reduce coupling)
+    let temp_pressure_contribution = (reactor.temperature - 800.0).max(0.0) * 0.01;
+    let pressure_target = pressure_base + pressure_exp_boost + temp_pressure_contribution;
+    
+    // Pressure change rate increases with reactivity and current pressure
+    let pressure_normalized = (reactor.pressure / 100.0).max(0.0);
+    let pressure_rate = 1.2 + reactivity * 1.8 + pressure_normalized * 0.4;
+    reactor.pressure = smooth_towards(reactor.pressure, pressure_target, pressure_rate, delta);
 }
 
 fn simulate_turbine(
@@ -227,7 +247,13 @@ fn simulate_turbine(
     // Turbine strength reduced to 10% of original
     let base_power = power_efficiency * 100.0;
     let flow_multiplier = if flow_rate > 0.01 { 1.0 } else { 0.5 }; // Reduced multiplier when no flow
-    environment.power_generated = base_power * flow_multiplier;
+    
+    // Generator requires minimum 100°C to produce power
+    if turbine.temperature < 100.0 {
+        environment.power_generated = 0.0;
+    } else {
+        environment.power_generated = base_power * flow_multiplier;
+    }
 
     // Money generation: power = money directly
     environment.money += environment.power_generated * delta * 0.1;
@@ -265,25 +291,28 @@ fn reset_game_state(
 
 fn evaluate_loss(
     reactor: Res<ReactorState>,
-    turbine: Res<TurbineState>,
     mut next_state: ResMut<NextState<GameState>>,
     mut game_over_reason: ResMut<GameOverReason>,
 ) {
+    // Check temperature first (meltdown)
     if reactor.temperature >= REACTOR_TEMP_LIMIT {
         info!(
-            "Game Over: Reactor temperature exceeded limit ({}°C >= {}°C)",
+            "REACTOR MELTDOWN! Temperature: {:.1}°C exceeded limit of {}°C",
             reactor.temperature, REACTOR_TEMP_LIMIT
         );
-        *game_over_reason = GameOverReason::ReactorOverheat;
-        next_state.set(GameState::GameOver);
-    } else if turbine.temperature >= TURBINE_TEMP_LIMIT {
-        info!(
-            "Game Over: Turbine temperature exceeded limit ({}°C >= {}°C)",
-            turbine.temperature, TURBINE_TEMP_LIMIT
-        );
-        *game_over_reason = GameOverReason::TurbineOverheat;
+        *game_over_reason = GameOverReason::ReactorMeltdown;
         next_state.set(GameState::GameOver);
     }
+    // Check pressure (explosion)
+    else if reactor.pressure >= REACTOR_PRESSURE_LIMIT {
+        info!(
+            "REACTOR EXPLOSION! Pressure: {:.1} bar exceeded limit of {} bar",
+            reactor.pressure, REACTOR_PRESSURE_LIMIT
+        );
+        *game_over_reason = GameOverReason::ReactorExplosion;
+        next_state.set(GameState::GameOver);
+    }
+    // Turbine overheating no longer causes game over - it just breaks (handled in simulate_turbine)
 }
 
 fn smooth_towards(current: f32, target: f32, rate: f32, delta: f32) -> f32 {
