@@ -459,7 +459,7 @@ fn update_uranek_idle_animation(
             for (mut image_node, _) in sprite_query.iter_mut() {
                 image_node.image = handle.clone();
             }
-            // Nowy punkt odniesienia: od teraz liczymy pełny interwał do kolejnego mrugnięcia
+            // New reference point: from now we count the full interval to the next blink
             state.last_blink_time = now;
         }
         return;
