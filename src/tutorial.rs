@@ -389,7 +389,7 @@ fn setup_tutorial_scene(
                             is_talking: false,
                         },
                         sprite_indices,
-                    )); 
+                    ));
 
                     // Speech Bubble
                     right_panel
@@ -468,7 +468,7 @@ fn advance_tutorial_on_space(
     ));
 
     // Exit after final step
-    if tutorial_state.step_index > 8 {
+    if tutorial_state.step_index > 6 {
         next_state.set(GameState::InGame);
     }
 }
@@ -509,27 +509,19 @@ fn update_tutorial_ui(
             "Ten pierwszy okrągły wskaźnik to temperatura REAKTORA.\n\nTrzymaj ją raczej w zielono-żółtej strefie."
         }
         3 => {
-            "Ten drugi wskaźnik to temperatura TURBINY.\n\nOna robi z gorącej wody pieniądze."
+            "Ten drugi wskaźnik to TURBINA.\n\nOna robi z gorącej wody pieniądze. Za zimna - nie kręci. Za gorąca - kręci się ostatni raz."
         }
         4 => {
-            " Za zimna - nie kręci. "
-        }
-        5 => {
-            "Za gorąca - kręci się ostatni raz."
-        }
-        6 => {
             "Suwak REAKTYWNOŚCI steruje, jak mocno reaktor się rozgrzewa.\n\nW grze będziesz nim delikatnie kręcić."
         }
-        7 => {
+        5 => {
             "Suwak TURBINY reguluje przepływ.\n\nWięcej przepływu = więcej mocy, ale też cieplejsza turbina."
         }
-        8 => {
+        6 => {
             "I to tyle z teorii! Teraz przejdziemy do prawdziwej zmiany.\n\nNaciśnij [SPACJA], żeby odpalić prawdziwy reaktor."
         }
         _ => "Gotowy na prawdziwy reaktor?",
     };
-
-
 
     **text = new_text.to_string();
 }
@@ -618,11 +610,11 @@ fn update_highlight_box(
     for (mut bg, mut border, highlight) in highlight_q.iter_mut() {
         let active = match (step, &highlight.kind) {
             // Gauges: glow only while he explicitly talks about the reactor & turbine gauges
-            (2 | 3 | 4 | 5, HighlightKind::Gauge) => true,
+            (2 | 3, HighlightKind::Gauge) => true,
             // Reactivity slider: when he explains the reactivity control
-            (6, HighlightKind::Reactivity) => true,
+            (4, HighlightKind::Reactivity) => true,
             // Turbine slider: when he explains the turbine control
-            (7, HighlightKind::Turbine) => true,
+            (5, HighlightKind::Turbine) => true,
             _ => false,
         };
 
