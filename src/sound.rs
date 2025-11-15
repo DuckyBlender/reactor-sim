@@ -1,5 +1,5 @@
 use crate::GameState;
-use crate::simulation::{REACTOR_TEMP_LIMIT, ReactorState, TURBINE_TEMP_LIMIT, TurbineState};
+use crate::simulation::{REACTOR_TEMP_LIMIT, ReactorState};
 use bevy::audio::Volume::Linear;
 use bevy::prelude::*;
 
@@ -131,15 +131,11 @@ fn create_hissing_system(
 
 fn hissing_activating_system(
     reactor: Res<ReactorState>,
-    turbine: Res<TurbineState>,
     mut hissing: ResMut<HissingState>,
 ) {
     let reactor_pct = reactor.temperature / REACTOR_TEMP_LIMIT;
-    let turbine_pct = turbine.temperature / TURBINE_TEMP_LIMIT;
+    let should_hiss = reactor_pct >= 0.70;
 
-    let should_hiss = reactor_pct >= 0.70 || turbine_pct >= 0.70;
-
-    // Rising edge trigger
     if should_hiss && !hissing.active {
         hissing.active = true;
         info!("Hissing activated");
