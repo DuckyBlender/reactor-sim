@@ -1,5 +1,5 @@
 use crate::GameState;
-use crate::simulation::{REACTOR_TEMP_LIMIT, ReactorState};
+use crate::simulation::{REACTOR_PRESSURE_LIMIT, REACTOR_TEMP_LIMIT, ReactorState};
 use bevy::audio::Volume::Linear;
 use bevy::prelude::*;
 
@@ -88,6 +88,10 @@ fn create_explosion_sound(asset_server: Res<AssetServer>) -> impl Bundle {
     (
         DespawnOnExit(GameState::GameOver),
         AudioPlayer::new(asset_server.load("sound/explosion.mp3")),
+        PlaybackSettings {
+            volume: Linear(0.3),
+            ..default()
+        },
         ExplosionSound,
     )
 }
@@ -104,7 +108,7 @@ fn create_hissing_system(
             DespawnOnExit(GameState::InGame),
             AudioPlayer::new(asset_server.load("sound/hissing.mp3")),
             PlaybackSettings {
-                volume: Linear(0.2),
+                volume: Linear(0.65),
                 mode: bevy::audio::PlaybackMode::Loop,
                 ..default()
             },
@@ -125,7 +129,7 @@ fn hissing_activating_system(
     reactor: Res<ReactorState>,
     mut hissing: ResMut<HissingState>,
 ) {
-    let reactor_pct = reactor.temperature / REACTOR_TEMP_LIMIT;
+    let reactor_pct = reactor.pressure / REACTOR_PRESSURE_LIMIT;
     let should_hiss = reactor_pct >= 0.70;
 
     if should_hiss && !hissing.active {
