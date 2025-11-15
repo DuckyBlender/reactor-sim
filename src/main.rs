@@ -35,7 +35,7 @@ fn main() {
         sound::AudioPlugin,
         tutorial::TutorialPlugin,
         model::Reactor3dPlugin,
-        menu::main_menu_plugin,
+        menu::MenuPlugin,
     ))
     .init_state::<GameState>();
     app.run();
