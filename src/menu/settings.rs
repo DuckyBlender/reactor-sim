@@ -1,8 +1,5 @@
+use bevy::{prelude::*, ui_widgets::{SliderValue, ValueChange, observe}};
 use crate::{GameState, sound::AudioSettings, ui::sliders::base_slider};
-use bevy::{
-    prelude::*,
-    ui_widgets::{SliderValue, ValueChange, observe},
-};
 
 #[derive(Component)]
 struct BackButton;
@@ -20,16 +17,18 @@ pub struct SettingsMenuPlugin;
 
 impl Plugin for SettingsMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Settings), setup_settings)
-            .add_systems(
-                Update,
-                sync_volume_slider.run_if(in_state(GameState::Settings)),
-            )
-            .add_systems(Update, update_volume_text)
-            .add_systems(
-                Update,
-                (handle_back_button).run_if(in_state(GameState::Settings)),
-            );
+        app
+        .add_systems(OnEnter(GameState::Settings), setup_settings)
+        .add_systems(
+            Update,
+            sync_volume_slider.run_if(in_state(GameState::Settings)),
+        )
+        .add_systems(Update, update_volume_text)
+        .add_systems(
+            Update,
+            (handle_back_button)
+                .run_if(in_state(GameState::Settings)),
+        );
     }
 }
 
@@ -45,7 +44,10 @@ fn handle_back_button(
     }
 }
 
-fn update_volume_text(settings: Res<AudioSettings>, mut texts: Query<&mut Text, With<VolumeText>>) {
+fn update_volume_text(
+    settings: Res<AudioSettings>,
+    mut texts: Query<&mut Text, With<VolumeText>>,
+) {
     if !settings.is_changed() {
         return;
     }

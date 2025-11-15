@@ -1,9 +1,8 @@
 use bevy::prelude::*;
 use rand::Rng;
 
-use crate::simulation::{
-    EnvironmentState, REACTOR_PRESSURE_LIMIT, REACTOR_TEMP_LIMIT, ReactorState, TURBINE_TEMP_LIMIT,
-    TurbineState,
+use crate::{
+    simulation::{EnvironmentState, ReactorState, TurbineState, REACTOR_TEMP_LIMIT, REACTOR_PRESSURE_LIMIT, TURBINE_TEMP_LIMIT},
 };
 
 #[derive(Component)]
@@ -94,6 +93,7 @@ pub fn update_uranek_idle_animation(
         }
     }
 }
+
 
 #[allow(clippy::too_many_arguments)]
 pub fn update_uranek_dialogue(
@@ -258,8 +258,7 @@ pub fn update_uranek_dialogue(
 
     // Update sprite based on reactor temperature or pressure zones (red/black = hot sprite)
     if let Ok(mut image_node) = sprite_query.single_mut()
-        && let Some(atlas) = &mut image_node.texture_atlas
-    {
+        && let Some(atlas) = &mut image_node.texture_atlas {
         // Use hot sprite when reactor temperature OR pressure is in danger zone (>= 80%)
         let is_danger_zone = reactor_ratio >= 0.80 || reactor_pressure_ratio >= 0.80;
         if is_danger_zone {

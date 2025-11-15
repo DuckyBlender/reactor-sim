@@ -24,23 +24,23 @@ pub struct MainMenuPlugin;
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::MainMenu), setup_main_menu)
-            .add_systems(
-                Update,
-                (
-                    button_system,
-                    handle_play_button,
-                    handle_quit_button,
-                    handle_credits_button,
-                    handle_tutorial_button,
-                    handle_settings_button,
-                )
-                    .run_if(in_state(GameState::MainMenu)),
+        .add_systems(
+            Update,
+            (
+                button_system,
+                handle_play_button,
+                handle_quit_button,
+                handle_credits_button,
+                handle_tutorial_button,
+                handle_settings_button,
             )
-            .add_systems(
-                Update,
-                (button_system, handle_back_button)
-                    .run_if(in_state(GameState::Credits).or(in_state(GameState::Settings))),
-            );
+                .run_if(in_state(GameState::MainMenu)),
+        )
+         .add_systems(
+            Update,
+            (button_system, handle_back_button)
+                .run_if(in_state(GameState::Credits).or(in_state(GameState::Settings))),
+        );
     }
 }
 
