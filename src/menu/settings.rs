@@ -1,5 +1,5 @@
 use bevy::{prelude::*, ui_widgets::{SliderValue, ValueChange, observe}};
-use crate::{GameState, sound::AudioSettings, ui::sliders::base_slider};
+use crate::{GameState, sound::AudioSettings, ui::sliders::base_slider, FONT_REGULAR, FONT_MEDIUM};
 
 #[derive(Component)]
 struct BackButton;
@@ -88,6 +88,9 @@ fn setup_settings(
     asset_server: Res<AssetServer>,
     settings: Res<AudioSettings>,
 ) {
+    let font = asset_server.load(FONT_REGULAR);
+    let font_medium = asset_server.load(FONT_MEDIUM);
+    
     commands.spawn((Camera2d, DespawnOnExit(GameState::Settings)));
     commands
         .spawn((
@@ -96,6 +99,8 @@ fn setup_settings(
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
                 flex_direction: FlexDirection::Column,
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
                 padding: UiRect::all(Val::Px(32.0)),
                 ..default()
             },
@@ -104,9 +109,9 @@ fn setup_settings(
         ))
         .with_children(|parent| {
             parent.spawn((
-                Text::new("Settings"),
+                Text::new("Ustawienia"),
                 TextFont {
-                    font: asset_server.load("fonts/LTSuperior-Medium.ttf"),
+                    font: font_medium.clone(),
                     font_size: 32.0,
                     ..default()
                 },
@@ -125,9 +130,9 @@ fn setup_settings(
                 },))
                 .with_children(|parent| {
                     parent.spawn((
-                        Text::new("Volume"),
+                        Text::new("Głośność"),
                         TextFont {
-                            font: asset_server.load("fonts/LTSuperior-Regular.ttf"),
+                            font: font.clone(),
                             font_size: 24.0,
                             ..default()
                         },
@@ -143,6 +148,11 @@ fn setup_settings(
                             parent.spawn(create_volume_slider(settings.volume));
                             parent.spawn((
                                 Text::new(format!("{}%", (settings.volume * 100.0) as u8)),
+                                TextFont {
+                                    font: font.clone(),
+                                    font_size: 24.0,
+                                    ..default()
+                                },
                                 VolumeText,
                             ));
                         });
@@ -163,8 +173,9 @@ fn setup_settings(
                         ))
                         .with_children(|parent| {
                             parent.spawn((
-                                Text::new("Back"),
+                                Text::new("Powrót"),
                                 TextFont {
+                                    font: font.clone(),
                                     font_size: 24.0,
                                     ..default()
                                 },

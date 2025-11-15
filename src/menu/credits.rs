@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::GameState;
+use crate::{GameState, FONT_REGULAR};
 
 #[derive(Component)]
 struct BackButton;
@@ -29,7 +29,9 @@ fn handle_back_button(
     }
 }
 
-fn setup_credits(mut commands: Commands) {
+fn setup_credits(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let font = asset_server.load(FONT_REGULAR);
+    
     commands.spawn((Camera2d, DespawnOnExit(GameState::Credits)));
     commands
         .spawn((
@@ -60,6 +62,7 @@ Ignacy Sztykiel - Developer, Sound & Visual Designer
                 "#,
                 ),
                 TextFont {
+                    font: font.clone(),
                     font_size: 32.0,
                     ..default()
                 },
@@ -87,8 +90,9 @@ Ignacy Sztykiel - Developer, Sound & Visual Designer
                 ))
                 .with_children(|p| {
                     p.spawn((
-                        Text::new("Back"),
+                        Text::new("Powrót"),
                         TextFont {
+                            font: font.clone(),
                             font_size: 24.0,
                             ..default()
                         },

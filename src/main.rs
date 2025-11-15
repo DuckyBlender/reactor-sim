@@ -11,6 +11,9 @@ mod sound;
 mod tutorial;
 mod ui;
 
+pub const FONT_REGULAR: &str = "fonts/LTSuperior-Regular.ttf";
+pub const FONT_MEDIUM: &str = "fonts/LTSuperior-Medium.ttf";
+
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 pub enum GameState {
     #[default]

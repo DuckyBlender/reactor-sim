@@ -4,7 +4,7 @@ use bevy::{
 };
 
 use crate::{
-    GameState, simulation::{ControlSettings, EnvironmentState}
+    GameState, simulation::{ControlSettings, EnvironmentState}, FONT_REGULAR
 };
 
 pub mod indicators;
@@ -63,7 +63,7 @@ fn setup_game_ui(
     *uranek_state = uranek::UranekState::default();
     uranek_state.last_default_text_time = time.elapsed_secs();
 
-    let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
+    let font = asset_server.load(FONT_REGULAR);
     
     // Load spritesheet and create atlas layout
     let spritesheet_texture = asset_server.load("sprites/spritesheet.png");

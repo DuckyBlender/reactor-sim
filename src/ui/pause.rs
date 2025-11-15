@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::GameState;
+use crate::{GameState, FONT_REGULAR, menu::main_menu::ReturnToMenuButton};
 
 pub struct PausePlugin;
 
@@ -24,9 +24,6 @@ pub struct PauseState {
 
 #[derive(Component)]
 struct PauseMenu;
-
-#[derive(Component)]
-struct ReturnToMenuButton;
 
 fn handle_pause_input(
     keyboard: Res<ButtonInput<KeyCode>>,
@@ -63,7 +60,7 @@ fn setup_pause_menu(
     
     commands.spawn((Camera2d, DespawnOnExit(GameState::Paused)));
 
-    let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
+    let font = asset_server.load(FONT_REGULAR);
 
     commands.spawn((
         DespawnOnExit(GameState::Paused),
@@ -80,7 +77,7 @@ fn setup_pause_menu(
         PauseMenu,
         children![
             (
-                Text::new("PAUSED"),
+                Text::new("PAUZA"),
                 TextFont {
                     font: font.clone(),
                     font_size: 144.0,
@@ -94,7 +91,7 @@ fn setup_pause_menu(
                 Transform::default(),
             ),
             (
-                Text::new("Press ESC to resume"),
+                Text::new("Naciśnij ESC, aby wznowić"),
                 TextFont {
                     font: font.clone(),
                     font_size: 48.0,
@@ -108,24 +105,22 @@ fn setup_pause_menu(
                 Transform::default(),
             ),
             (
+                Button,
                 Node {
-                    width: Val::Px(400.0),
-                    height: Val::Px(120.0),
-                    border: UiRect::all(Val::Px(10.0)),
+                    width: Val::Px(200.0),
+                    height: Val::Px(60.0),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
+                    margin: UiRect::all(Val::Px(10.0)),
                     ..default()
                 },
-                BorderRadius::all(Val::Px(16.0)),
-                BorderColor::all(Color::srgb(0.7, 0.7, 0.7)),
-                BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
-                Button,
+                BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
                 ReturnToMenuButton,
                 children![(
-                    Text::new("Return to Menu"),
+                    Text::new("Powrót do menu"),
                     TextFont {
                         font,
-                        font_size: 40.0,
+                        font_size: 24.0,
                         ..default()
                     },
                     TextColor(Color::WHITE),
