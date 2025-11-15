@@ -1,5 +1,5 @@
 use crate::GameState;
-use crate::simulation::{REACTOR_PRESSURE_LIMIT, REACTOR_TEMP_LIMIT, ReactorState};
+use crate::simulation::{REACTOR_PRESSURE_LIMIT, ReactorState};
 use bevy::audio::Volume::Linear;
 use bevy::prelude::*;
 
@@ -80,16 +80,20 @@ fn update_audio_volume(
 fn explosion_audio_system(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    settings: Res<AudioSettings>
 ) {
-    commands.spawn(create_explosion_sound(asset_server));
+    commands.spawn(create_explosion_sound(asset_server, settings));
 }
 
-fn create_explosion_sound(asset_server: Res<AssetServer>) -> impl Bundle {
+fn create_explosion_sound(
+    asset_server: Res<AssetServer>,
+    settings: Res<AudioSettings>
+) -> impl Bundle {
     (
         DespawnOnExit(GameState::GameOver),
         AudioPlayer::new(asset_server.load("sound/explosion.mp3")),
         PlaybackSettings {
-            volume: Linear(0.3),
+            volume: Linear((settings.volume - 0.5).clamp(0.0, 1.0)),
             ..default()
         },
         ExplosionSound,
@@ -98,6 +102,7 @@ fn create_explosion_sound(asset_server: Res<AssetServer>) -> impl Bundle {
 
 fn create_hissing_system(
     asset_server: Res<AssetServer>,
+    settings: Res<AudioSettings>,
     hissing: Res<HissingState>,
     mut commands: Commands,
     existing: Query<Entity, With<HissingSound>>,
@@ -108,7 +113,7 @@ fn create_hissing_system(
             DespawnOnExit(GameState::InGame),
             AudioPlayer::new(asset_server.load("sound/hissing.mp3")),
             PlaybackSettings {
-                volume: Linear(0.65),
+                volume: Linear((settings.volume - 0.35).clamp(0.0, 1.0)),
                 mode: bevy::audio::PlaybackMode::Loop,
                 ..default()
             },
