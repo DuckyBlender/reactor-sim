@@ -7,7 +7,7 @@ use bevy::{
 
 use crate::{
     GameState,
-    simulation::{ControlSettings, EnvironmentState, GameOverReason},
+    simulation::{ControlSettings, EnvironmentState, GameOverReason, ReactorState, TurbineState, REACTOR_TEMP_LIMIT, TURBINE_TEMP_LIMIT},
 };
 
 pub mod indicators;
@@ -28,11 +28,45 @@ struct PauseMenu;
 #[derive(Component)]
 struct ReturnToMenuButton;
 
+#[derive(Component)]
+struct Uranek;
+
+#[derive(Component)]
+struct UranekText;
+
+#[derive(Component)]
+struct UranekIdle;
+
+#[derive(Component)]
+struct UranekBubble;
+
+#[derive(Resource)]
+struct UranekState {
+    last_blink_time: f32,
+    blink_frame: u8,
+    last_comment_time: f32,
+    last_default_text_time: f32,
+    talk_timeout: f32,
+}
+
+impl Default for UranekState {
+    fn default() -> Self {
+        Self {
+            last_blink_time: 0.0,
+            blink_frame: 0,
+            last_comment_time: -999.0,
+            last_default_text_time: 0.0,
+            talk_timeout: 0.0,
+        }
+    }
+}
+
 pub struct ReactorUiPlugin;
 
 impl Plugin for ReactorUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::InGame), setup_game_ui)
+        app.insert_resource(UranekState::default())
+            .add_systems(OnEnter(GameState::InGame), setup_game_ui)
             .add_systems(
                 Update,
                 (
@@ -52,6 +86,8 @@ impl Plugin for ReactorUiPlugin {
                     indicators::rebuild_turbine_gauge_from_buyback,
                     update_money_display,
                     handle_pause_input,
+                    update_uranek_idle_animation,
+                    update_uranek_dialogue,
                 )
                     .run_if(in_state(GameState::InGame)),
             )
@@ -68,8 +104,13 @@ fn setup_game_ui(
     mut commands: Commands,
     controls: Res<ControlSettings>,
     asset_server: Res<AssetServer>,
+    mut uranek_state: ResMut<UranekState>,
+    time: Res<Time>,
 ) {
+    uranek_state.last_default_text_time = time.elapsed_secs();
+
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
+    let uranek_idle_0: Handle<Image> = asset_server.load("sprites/idle_0.png");
 
     // Main UI root
     commands.spawn((
@@ -117,6 +158,57 @@ fn setup_game_ui(
                     right: Val::Px(40.0),
                     ..default()
                 },
+            ),
+            // Uranek companion (top-left corner)
+            (
+                Node {
+                    position_type: PositionType::Absolute,
+                    top: Val::Px(20.0),
+                    left: Val::Px(20.0),
+                    flex_direction: FlexDirection::Row,
+                    column_gap: Val::Px(16.0),
+                    align_items: AlignItems::End,
+                    ..default()
+                },
+                children![
+                    // Uranek sprite
+                    (
+                        Node {
+                            width: Val::Px(220.0),
+                            height: Val::Px(220.0),
+                            ..default()
+                        },
+                        Uranek,
+                        UranekIdle,
+                        ImageNode::new(uranek_idle_0.clone()),
+                    ),
+                    // Speech bubble (initially visible with default text)
+                    (
+                        Node {
+                            width: Val::Px(420.0),
+                            min_height: Val::Px(80.0),
+                            padding: UiRect::all(Val::Px(16.0)),
+                            border: UiRect::all(Val::Px(2.0)),
+                            ..default()
+                        },
+                        BackgroundColor(Color::srgba(0.05, 0.05, 0.08, 0.85)),
+                        BorderRadius::all(Val::Px(12.0)),
+                        BorderColor::all(Color::srgb(0.6, 0.9, 1.0)),
+                        UranekBubble,
+                        children![
+                            (
+                                Text::new("Uranek: Pilnujmy, żeby ten reaktor trzymał się w ryzach."),
+                                TextFont {
+                                    font: font.clone(),
+                                    font_size: 22.0,
+                                    ..default()
+                                },
+                                TextColor(Color::WHITE),
+                                UranekText,
+                            ),
+                        ],
+                    ),
+                ],
             ),
             // Bottom section with gauges and sliders
             (
@@ -345,4 +437,132 @@ fn setup_game_over_ui(
             ),
         ],
     ));
+}
+
+fn update_uranek_idle_animation(
+    time: Res<Time>,
+    mut state: ResMut<UranekState>,
+    mut sprite_query: Query<(&mut ImageNode, &mut UranekIdle)>,
+    asset_server: Res<AssetServer>,
+) {
+    let now = time.elapsed_secs();
+
+    // Parametry mrugania: co kilka sekund krótkie mrugnięcie na 1 sekundę
+    let interval = 8.0; // odstęp między mrugnięciami (oczy otwarte)
+    let blink_duration = 1.0; // czas "zamkniętych" oczu
+
+    if state.blink_frame == 1 {
+        // Faza mrugnięcia – po sekundzie wracamy do podstawowej klatki
+        if now - state.last_blink_time >= blink_duration {
+            state.blink_frame = 0;
+            let handle: Handle<Image> = asset_server.load("sprites/idle_0.png");
+            for (mut image_node, _) in sprite_query.iter_mut() {
+                image_node.image = handle.clone();
+            }
+            // Nowy punkt odniesienia: od teraz liczymy pełny interwał do kolejnego mrugnięcia
+            state.last_blink_time = now;
+        }
+        return;
+    }
+
+    // Oczy otwarte – sprawdzamy czy minął pełny interwał do kolejnego mrugnięcia
+    if now - state.last_blink_time >= interval {
+        state.last_blink_time = now;
+        state.blink_frame = 1;
+        let handle: Handle<Image> = asset_server.load("sprites/idle_1.png");
+        for (mut image_node, _) in sprite_query.iter_mut() {
+            image_node.image = handle.clone();
+        }
+    }
+}
+
+fn update_uranek_dialogue(
+    time: Res<Time>,
+    reactor: Res<ReactorState>,
+    turbine: Res<TurbineState>,
+    environment: Res<EnvironmentState>,
+    mut state: ResMut<UranekState>,
+    mut text_query: Query<&mut Text, With<UranekText>>,
+    mut bubble_query: Query<(&mut Node, &mut BackgroundColor), With<UranekBubble>>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+) {
+    let now = time.elapsed_secs();
+
+    // 1) Handle initial greeting lifetime
+    if now - state.last_default_text_time > 3.0 && state.last_default_text_time > 0.0 {
+        for mut text in text_query.iter_mut() {
+            **text = String::new();
+        }
+        state.last_default_text_time = 0.0;
+    }
+
+    // 2) Handle continuous talk timeout (for warning/earnings lines)
+    //    If talk_timeout expired and this is not the initial greeting, clear text.
+    if state.talk_timeout > 0.0 && now > state.talk_timeout {
+        for mut text in text_query.iter_mut() {
+            **text = String::new();
+        }
+        state.talk_timeout = 0.0;
+    }
+
+    // 3) Determine if Uranek has something new to say
+    const COMMENT_COOLDOWN: f32 = 6.0;
+    let mut message: Option<&'static str> = None;
+
+    let reactor_ratio = reactor.temperature / REACTOR_TEMP_LIMIT;
+    let turbine_ratio = turbine.temperature / TURBINE_TEMP_LIMIT;
+
+    if now - state.last_comment_time >= COMMENT_COOLDOWN {
+        if reactor_ratio > 0.95 {
+            message = Some("Uranek: REAKTOR ZARAZ SIĘ ROZTOPI! Obniż reaktywność!");
+        } else if reactor_ratio > 0.8 {
+            message = Some("Uranek: Reaktor jest głęboko w czerwonym. Włóż pręty, teraz.");
+        } else if turbine_ratio > 0.95 {
+            message = Some("Uranek: Turbina wyje! Ochłodź ją, zanim wybuchnie!");
+        } else if turbine_ratio > 0.8 {
+            message = Some("Uranek: Turbina jest w strefie zagrożenia. Zmniejsz przepływ.");
+        } else if environment.money > 1000.0 {
+            message = Some("Uranek: Świetnie! Ta elektrownia drukuje pieniądze.");
+        }
+    }
+
+    if let Some(msg) = message {
+        // New line -> update text and set talk timeout
+        for mut text in text_query.iter_mut() {
+            **text = msg.to_string();
+        }
+
+        // Show speech bubble while talking
+        if let Ok((mut node, mut bg)) = bubble_query.single_mut() {
+            node.border = UiRect::all(Val::Px(2.0));
+            *bg = BackgroundColor(Color::srgba(0.05, 0.05, 0.08, 0.85));
+        }
+
+        // Play talking sound
+        commands.spawn(AudioPlayer::new(asset_server.load("sound/uranek_talking.mp3")));
+        state.last_comment_time = now;
+
+        // Bubble stays visible for this many seconds after the line
+        state.talk_timeout = now + 4.0;
+    }
+
+    // 4) Final bubble visibility: show if there is any text, hide otherwise
+    let mut has_any_text = false;
+    for text in text_query.iter_mut() {
+        if !text.to_string().is_empty() {
+            has_any_text = true;
+            break;
+        }
+    }
+
+    if let Ok((mut node, mut bg)) = bubble_query.single_mut() {
+        if has_any_text {
+            node.border = UiRect::all(Val::Px(2.0));
+            *bg = BackgroundColor(Color::srgba(0.05, 0.05, 0.08, 0.85));
+        } else {
+            node.border = UiRect::all(Val::Px(0.0));
+            *bg = BackgroundColor(Color::srgba(0.05, 0.05, 0.08, 0.0));
+        }
+    }
 }
