@@ -193,7 +193,6 @@ fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.7)),
         Transform::default(),
-        GlobalTransform::default(),
         PauseMenu,
         children![
             (
@@ -208,6 +207,7 @@ fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                     margin: UiRect::bottom(Val::Px(40.0)),
                     ..default()
                 },
+                Transform::default(),
             ),
             (
                 Text::new("Press ESC to resume"),
@@ -221,6 +221,7 @@ fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                     margin: UiRect::bottom(Val::Px(60.0)),
                     ..default()
                 },
+                Transform::default(),
             ),
             (
                 Node {
