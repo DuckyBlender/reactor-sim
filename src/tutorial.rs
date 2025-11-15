@@ -5,6 +5,8 @@ use crate::{
 };
 use bevy::prelude::*;
 
+
+
 pub struct TutorialPlugin;
 
 impl Plugin for TutorialPlugin {
@@ -17,9 +19,9 @@ impl Plugin for TutorialPlugin {
                     update_tutorial_ui,
                     update_highlight_box,
                     update_uranek_animation,
-                )
-                    .run_if(in_state(GameState::Tutorial)),
-            );
+                ).run_if(in_state(GameState::Tutorial)),
+            )
+            .add_systems(OnExit(GameState::Tutorial), (teardown_tutorial_scene, stop_uranek_talking_sound));
     }
 }
 
@@ -27,6 +29,10 @@ impl Plugin for TutorialPlugin {
 pub struct TutorialState {
     pub step_index: usize,
 }
+
+/// Marker for Uranek talking audio so we can ensure only one exists at a time
+#[derive(Component)]
+struct UranekTalkingAudio;
 
 #[derive(Component)]
 struct TutorialCamera;
@@ -409,14 +415,35 @@ fn advance_tutorial_on_space(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut tutorial_state: ResMut<TutorialState>,
     mut next_state: ResMut<NextState<GameState>>,
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    // query existing Uranek talking audio so we don't spawn duplicates
+    existing_audio_q: Query<Entity, With<UranekTalkingAudio>>,
 ) {
-    if keyboard.just_pressed(KeyCode::Space) {
-        tutorial_state.step_index += 1;
+    if !keyboard.just_pressed(KeyCode::Space) {
+        return;
+    }
 
-        // Exit after final step
-        if tutorial_state.step_index > 6 {
-            next_state.set(GameState::InGame);
-        }
+    // despawn any previous talking audio so it doesn't multiply
+    for entity in existing_audio_q.iter() {
+        commands.entity(entity).despawn();
+    }
+
+    // advance step
+    tutorial_state.step_index += 1;
+
+    // play single-shot talking audio for this step (while we're in tutorial)
+    let handle: Handle<AudioSource> = asset_server.load("sound/uranek_talking.mp3");
+    commands.spawn((
+        AudioPlayer::new(handle),
+        PlaybackSettings::ONCE,
+        UranekTalkingAudio,
+        DespawnOnExit(GameState::Tutorial),
+    ));
+
+    // Exit after final step
+    if tutorial_state.step_index > 6 {
+        next_state.set(GameState::InGame);
     }
 }
 
@@ -461,6 +488,16 @@ fn update_tutorial_ui(
     **text = new_text.to_string();
 }
 
+fn teardown_tutorial_scene(
+    mut commands: Commands,
+    query: Query<Entity, With<DespawnOnExit<GameState>>>,
+) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn();
+    }
+    commands.remove_resource::<TutorialState>();
+}
+
 fn update_uranek_animation(
     tutorial_state: Res<TutorialState>,
     time: Res<Time>,
@@ -502,6 +539,17 @@ fn update_uranek_animation(
     } else {
         textures.idle_0.clone()
     };
+}
+
+
+fn stop_uranek_talking_sound(
+    mut commands: Commands,
+    existing_audio_q: Query<Entity, With<UranekTalkingAudio>>,
+) {
+    // Ensure any remaining talking sounds are removed when exiting tutorial
+    for entity in existing_audio_q.iter() {
+        commands.entity(entity).despawn();
+    }
 }
 
 fn update_highlight_box(
