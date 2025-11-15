@@ -426,8 +426,21 @@ fn advance_tutorial_on_space(
     // advance step
     tutorial_state.step_index += 1;
 
-    // play talking audio for this step
-    play_tutorial_sound_logic(&mut commands, &asset_server, &existing_audio_q);
+    // despawn any previous talking audio so it doesn't multiply
+    for entity in existing_audio_q.iter() {
+        commands.entity(entity).despawn();
+    }
+
+    // play single-shot talking audio for this step
+    let random_num = rand::thread_rng().gen_range(1..=10);
+    let sound_path = format!("sound/talking/talking_{:03}.mp3", random_num);
+    let handle: Handle<AudioSource> = asset_server.load(sound_path);
+    commands.spawn((
+        AudioPlayer::new(handle),
+        PlaybackSettings::ONCE,
+        UranekTalkingAudio,
+        DespawnOnExit(GameState::Tutorial),
+    ));
 
     // Exit after final step
     if tutorial_state.step_index > 6 {
@@ -521,10 +534,10 @@ fn update_uranek_animation(
 }
 
 
-fn play_tutorial_sound_logic(
-    commands: &mut Commands,
-    asset_server: &Res<AssetServer>,
-    existing_audio_q: &Query<Entity, With<UranekTalkingAudio>>,
+fn play_tutorial_sound(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    existing_audio_q: Query<Entity, With<UranekTalkingAudio>>,
 ) {
     // despawn any previous talking audio so it doesn't multiply
     for entity in existing_audio_q.iter() {
@@ -541,14 +554,6 @@ fn play_tutorial_sound_logic(
         UranekTalkingAudio,
         DespawnOnExit(GameState::Tutorial),
     ));
-}
-
-fn play_tutorial_sound(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    existing_audio_q: Query<Entity, With<UranekTalkingAudio>>,
-) {
-    play_tutorial_sound_logic(&mut commands, &asset_server, &existing_audio_q);
 }
 
 fn update_highlight_box(
