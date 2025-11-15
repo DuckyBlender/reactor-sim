@@ -90,7 +90,7 @@ fn setup_tutorial_scene(mut commands: Commands, asset_server: Res<AssetServer>) 
     commands.insert_resource(TutorialState::default());
 
     // Camera
-    commands.spawn((Camera2d, TutorialCamera, DespawnOnExit));
+    commands.spawn((Camera2d, TutorialCamera, DespawnOnExit(GameState::Tutorial)));
 
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
 
@@ -103,7 +103,7 @@ fn setup_tutorial_scene(mut commands: Commands, asset_server: Res<AssetServer>) 
     // Root container
     commands
         .spawn((
-            DespawnOnExit,
+            DespawnOnExit(GameState::Tutorial),
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
@@ -438,7 +438,7 @@ fn advance_tutorial_on_space(
         AudioPlayer::new(handle),
         PlaybackSettings::ONCE,
         UranekTalkingAudio,
-        DespawnOnExit,
+        DespawnOnExit(GameState::Tutorial),
     ));
 
     // Exit after final step
@@ -488,6 +488,16 @@ fn update_tutorial_ui(
     **text = new_text.to_string();
 }
 
+fn teardown_tutorial_scene(
+    mut commands: Commands,
+    query: Query<Entity, With<DespawnOnExit<GameState>>>,
+) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn();
+    }
+    commands.remove_resource::<TutorialState>();
+}
+
 fn update_uranek_animation(
     tutorial_state: Res<TutorialState>,
     time: Res<Time>,
@@ -530,6 +540,7 @@ fn update_uranek_animation(
         textures.idle_0.clone()
     };
 }
+
 
 fn stop_uranek_talking_sound(
     mut commands: Commands,
