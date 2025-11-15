@@ -24,7 +24,7 @@ fn setup_game_over_ui(
     game_over_reason: Res<GameOverReason>,
     asset_server: Res<AssetServer>,
 ) {
-    info!("changed to game over");
+    info!("State change: <Unknown> -> GameOver");
     // Camera
     commands.spawn((Camera2d, DespawnOnExit(GameState::GameOver)));
 
