@@ -69,14 +69,14 @@ pub fn gauge_grid(font: Handle<Font>) -> impl Bundle {
         BorderRadius::all(Val::Px(6.0)),
         children![
             gauge(
-                "Temperatura Reaktora",
+                "Temp. Reaktora",
                 "0°C",
                 ReactorTempIndicator,
                 GaugeType::ReactorTemp,
                 font.clone()
             ),
             gauge(
-                "Ciśnienie Reaktora",
+                "Ciśn. Reaktora",
                 "0 bar",
                 ReactorPressureIndicator,
                 GaugeType::ReactorPressure,
@@ -106,7 +106,7 @@ fn turbine_gauge(font: Handle<Font>) -> impl Bundle {
         children![
             // Title
             (
-                Text::new("Temperatura Turbiny"),
+                Text::new("Temp.  Turbiny"),
                 TextFont {
                     font: font.clone(),
                     font_size: GAUGE_TITLE_FONT_SIZE,

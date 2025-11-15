@@ -68,11 +68,20 @@ fn setup_3d_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
         DespawnOnExit(GameState::InGame),
     ));
 
+    // Sunlight from +X direction, angled downward to shine on -X Y surface
     commands.spawn((
         DirectionalLight {
+            illuminance: 10000.0, // Bright sunlight
             shadows_enabled: true,
+            color: Color::srgb(1.0, 0.98, 0.95), // Warm sunlight color
             ..default()
         },
+        Transform::from_rotation(Quat::from_euler(
+            EulerRot::YXZ,
+            -FRAC_PI_2,      // Rotate -90° around Y (from +X direction)
+            -FRAC_PI_3,      // Rotate -60° around X (angled downward)
+            0.0,
+        )),
         CascadeShadowConfigBuilder {
             num_cascades: 1,
             maximum_distance: 1.6,
@@ -81,6 +90,13 @@ fn setup_3d_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
         .build(),
         DespawnOnExit(GameState::InGame),
     ));
+
+    // Ambient light for overall scene illumination
+    commands.insert_resource(AmbientLight {
+        color: Color::srgb(0.8, 0.85, 0.9), // Cool ambient light
+        brightness: 300.0,
+        affects_lightmapped_meshes: true,
+    });
 
     commands.spawn((
         SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset("models/reactor.glb"))),

@@ -302,7 +302,7 @@ fn setup_tutorial_scene(
                                     })
                                     .with_children(|slider_container| {
                                         slider_container.spawn((
-                                            Text::new("Prędkość Transferu"),
+                                            Text::new("Prędkość Turbiny"),
                                             TextFont {
                                                 font: font.clone(),
                                                 font_size: 16.0,
