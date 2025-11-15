@@ -76,7 +76,7 @@ fn setup_main_menu(mut commands: Commands) {
         ))
         .with_children(|parent| {
             parent.spawn((
-                Text::new("Reactor Simulator"),
+                Text::new("Symulator Reaktora z Urankiem"),
                 TextFont {
                     font_size: 64.0,
                     ..default()
@@ -232,17 +232,17 @@ fn setup_credits(mut commands: Commands) {
         .with_children(|parent| {
             parent.spawn((
                 Text::new(
-                    "
-                Reactor Simulator
+                    r#"
+Symulator Reaktora z Urankiem
 
-                Autorzy:
+Autorzy:
 
-                Kacper Sowinski - Project Manager, Developer
-                Alan Klas - Lead Developer, Code Reviewer, 
-                Mateusz Oskar Kmiec - Developer, Sound & Visual Designer,
-                Ignacy Stykiel - Developer, Sound & Visual Designer
+Kacper Sowinski - Project Manager, Developer
+Alan Klas - Lead Developer, Code Reviewer, 
+Mateusz Oskar Kmiec - Developer, Sound & Visual Designer,
+Ignacy Sztykiel - Developer, Sound & Visual Designer
                 
-                ",
+                "#,
                 ),
                 TextFont {
                     font_size: 32.0,
@@ -251,6 +251,8 @@ fn setup_credits(mut commands: Commands) {
                 TextColor(Color::WHITE),
                 Node {
                     margin: UiRect::all(Val::Px(20.0)),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
                     ..default()
                 },
             ));

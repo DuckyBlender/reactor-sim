@@ -84,13 +84,7 @@ pub fn gauge_grid(font: Handle<Font>) -> impl Bundle {
                 font.clone()
             ),
             turbine_gauge(font.clone()),
-            gauge(
-                "Moc",
-                "0 MW",
-                PowerIndicator,
-                GaugeType::Power,
-                font
-            ),
+            gauge("Moc", "0 MW", PowerIndicator, GaugeType::Power, font),
         ],
     )
 }
