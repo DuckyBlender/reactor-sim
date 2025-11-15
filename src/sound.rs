@@ -42,7 +42,6 @@ impl Plugin for AudioPlugin {
             .insert_resource(AudioSettings::default())
             .insert_resource(HissingState::default())
             .add_systems(OnEnter(GameState::InGame), setup_audio)
-            .add_systems(OnExit(GameState::InGame), cleanup_audio)
             .add_systems(
                 Update,
                 (
@@ -64,17 +63,10 @@ fn create_background_music(asset_server: Res<AssetServer>) -> impl Bundle {
         AudioPlayer::new(asset_server.load("sound/background_music.mp3")),
         PlaybackSettings::LOOP,
         BackgroundMusic,
+        DespawnOnExit(GameState::InGame),
     )
 }
 
-fn cleanup_audio(
-    mut commands: Commands,
-    music_query: Query<Entity, With<BackgroundMusic>>
-) {
-    for entity in music_query.iter() {
-        commands.entity(entity).despawn();
-    }
-}
 
 fn update_audio_volume(
     settings: Res<AudioSettings>,

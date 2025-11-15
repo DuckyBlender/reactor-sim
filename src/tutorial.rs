@@ -1,16 +1,18 @@
-use bevy::prelude::*;
 use crate::{
     GameState,
-    simulation::{ControlSettings, ReactorState, TurbineState, EnvironmentState},
+    simulation::{ControlSettings, EnvironmentState, ReactorState, TurbineState},
     ui::indicators::gauge_grid,
 };
+use bevy::prelude::*;
+use rand::Rng;
+
+
 
 pub struct TutorialPlugin;
 
 impl Plugin for TutorialPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_systems(OnEnter(GameState::Tutorial), setup_tutorial_scene)
+        app.add_systems(OnEnter(GameState::Tutorial), (setup_tutorial_scene, play_tutorial_sound))
             .add_systems(
                 Update,
                 (
@@ -27,6 +29,10 @@ impl Plugin for TutorialPlugin {
 pub struct TutorialState {
     pub step_index: usize,
 }
+
+/// Marker for Uranek talking audio so we can ensure only one exists at a time
+#[derive(Component)]
+struct UranekTalkingAudio;
 
 #[derive(Component)]
 struct TutorialCamera;
@@ -75,10 +81,7 @@ enum HighlightKind {
     Turbine,
 }
 
-fn setup_tutorial_scene(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
+fn setup_tutorial_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
     // Reset game state
     commands.insert_resource(ControlSettings::default());
     commands.insert_resource(ReactorState::default());
@@ -412,14 +415,36 @@ fn advance_tutorial_on_space(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut tutorial_state: ResMut<TutorialState>,
     mut next_state: ResMut<NextState<GameState>>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    existing_audio_q: Query<Entity, With<UranekTalkingAudio>>,
 ) {
-    if keyboard.just_pressed(KeyCode::Space) {
-        tutorial_state.step_index += 1;
+    if !keyboard.just_pressed(KeyCode::Space) {
+        return;
+    }
 
-        // Exit after final step
-        if tutorial_state.step_index > 6 {
-            next_state.set(GameState::InGame);
-        }
+    // advance step
+    tutorial_state.step_index += 1;
+
+    // despawn any previous talking audio so it doesn't multiply
+    for entity in existing_audio_q.iter() {
+        commands.entity(entity).despawn();
+    }
+
+    // play single-shot talking audio for this step
+    let random_num = rand::thread_rng().gen_range(1..=10);
+    let sound_path = format!("sound/talking/talking_{:03}.mp3", random_num);
+    let handle: Handle<AudioSource> = asset_server.load(sound_path);
+    commands.spawn((
+        AudioPlayer::new(handle),
+        PlaybackSettings::ONCE,
+        UranekTalkingAudio,
+        DespawnOnExit(GameState::Tutorial),
+    ));
+
+    // Exit after final step
+    if tutorial_state.step_index > 6 {
+        next_state.set(GameState::InGame);
     }
 }
 
@@ -437,23 +462,41 @@ fn update_tutorial_ui(
     };
 
     let new_text = match tutorial_state.step_index {
-        0 => "Cześć! Jestem URANEK.\n\nPracuję jako operator reaktora już od 12 godzin bez przerwy.\nTy będziesz mi pomagać, zanim przerobimy się na żarówkę świetlną.",
-        1 => "Najpierw REAKTOR.\n\nTutaj grzeje się paliwo. Zbyt zimny reaktor = zero kasy.\nZa gorący = grill all-inclusive.",
-        2 => "Ten pierwszy okrągły wskaźnik to temperatura REAKTORA.\n\nTrzymaj ją raczej w zielono-żółtej strefie.",
-        3 => "Ten drugi wskaźnik to TURBINA.\n\nOna robi z gorącej wody pieniądze. Za zimna - nie kręci. Za gorąca - kręci się ostatni raz.",
-        4 => "Suwak REAKTYWNOŚCI steruje, jak mocno reaktor się rozgrzewa.\n\nW grze będziesz nim delikatnie kręcić.",
-        5 => "Suwak TURBINY reguluje przepływ.\n\nWięcej przepływu = więcej mocy, ale też cieplejsza turbina.",
-        6 => "I to tyle z teorii! Teraz przejdziemy do prawdziwej zmiany.\n\nNaciśnij [SPACJA], żeby odpalić prawdziwy reaktor.",
+        0 => {
+            "Cześć! Jestem URANEK.\n\nPracuję jako operator reaktora już od 12 godzin bez przerwy.\nTy będziesz mi pomagać, zanim przerobimy się na żarówkę świetlną."
+        }
+        1 => {
+            "Najpierw REAKTOR.\n\nTutaj grzeje się paliwo. Zbyt zimny reaktor = zero kasy.\nZa gorący = grill all-inclusive."
+        }
+        2 => {
+            "Ten pierwszy okrągły wskaźnik to temperatura REAKTORA.\n\nTrzymaj ją raczej w zielono-żółtej strefie."
+        }
+        3 => {
+            "Ten drugi wskaźnik to TURBINA.\n\nOna robi z gorącej wody pieniądze. Za zimna - nie kręci. Za gorąca - kręci się ostatni raz."
+        }
+        4 => {
+            "Suwak REAKTYWNOŚCI steruje, jak mocno reaktor się rozgrzewa.\n\nW grze będziesz nim delikatnie kręcić."
+        }
+        5 => {
+            "Suwak TURBINY reguluje przepływ.\n\nWięcej przepływu = więcej mocy, ale też cieplejsza turbina."
+        }
+        6 => {
+            "I to tyle z teorii! Teraz przejdziemy do prawdziwej zmiany.\n\nNaciśnij [SPACJA], żeby odpalić prawdziwy reaktor."
+        }
         _ => "Gotowy na prawdziwy reaktor?",
     };
 
     **text = new_text.to_string();
 }
 
+
 fn update_uranek_animation(
     tutorial_state: Res<TutorialState>,
     time: Res<Time>,
-    mut uranek_query: Query<(&mut ImageNode, &mut UranekAnimationState, &UraneKTextures), With<UranekSprite>>,
+    mut uranek_query: Query<
+        (&mut ImageNode, &mut UranekAnimationState, &UraneKTextures),
+        With<UranekSprite>,
+    >,
 ) {
     let Ok((mut image_node, mut anim, textures)) = uranek_query.single_mut() else {
         return;
@@ -490,6 +533,29 @@ fn update_uranek_animation(
     };
 }
 
+
+fn play_tutorial_sound(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    existing_audio_q: Query<Entity, With<UranekTalkingAudio>>,
+) {
+    // despawn any previous talking audio so it doesn't multiply
+    for entity in existing_audio_q.iter() {
+        commands.entity(entity).despawn();
+    }
+
+    // Play speaking sound
+    let random_num = rand::thread_rng().gen_range(1..=10);
+    let sound_path = format!("sound/talking/talking_{:03}.mp3", random_num);
+    let handle: Handle<AudioSource> = asset_server.load(sound_path);
+    commands.spawn((
+        AudioPlayer::new(handle),
+        PlaybackSettings::ONCE,
+        UranekTalkingAudio,
+        DespawnOnExit(GameState::Tutorial),
+    ));
+}
+
 fn update_highlight_box(
     tutorial_state: Res<TutorialState>,
     time: Res<Time>,
@@ -512,7 +578,11 @@ fn update_highlight_box(
             _ => false,
         };
 
-        let (fill_a, border_a) = if active { (alpha, border_alpha) } else { (0.0, 0.0) };
+        let (fill_a, border_a) = if active {
+            (alpha, border_alpha)
+        } else {
+            (0.0, 0.0)
+        };
 
         *bg = BackgroundColor(Color::srgba(1.0, 1.0, 0.3, fill_a));
         border.top = Color::srgba(1.0, 1.0, 0.3, border_a);
@@ -521,8 +591,3 @@ fn update_highlight_box(
         border.left = Color::srgba(1.0, 1.0, 0.3, border_a);
     }
 }
-
-
-
-
-

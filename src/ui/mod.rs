@@ -78,8 +78,8 @@ fn setup_game_ui(
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
             flex_direction: FlexDirection::Column,
-            padding: UiRect::all(Val::Px(20.0)),
-            row_gap: Val::Px(30.0),
+            padding: UiRect::all(Val::Px(40.0)),
+            row_gap: Val::Px(60.0),
             ..default()
         },
         BackgroundColor(Color::NONE),
@@ -90,31 +90,31 @@ fn setup_game_ui(
             (
                 TextFont {
                     font: font.clone(),
-                    font_size: 28.0,
+                    font_size: 56.0,
                     ..default()
                 },
                 TextColor(Color::WHITE),
                 Node {
                     position_type: PositionType::Absolute,
-                    top: Val::Px(20.0),
-                    right: Val::Px(20.0),
+                    top: Val::Px(40.0),
+                    right: Val::Px(40.0),
                     ..default()
                 },
             ),
             // Money display
             (
-                Text::new("A$0"),
+                Text::new("$0"),
                 TextFont {
                     font: font.clone(),
-                    font_size: 24.0,
+                    font_size: 48.0,
                     ..default()
                 },
                 TextColor(Color::WHITE),
                 MoneyText,
                 Node {
                     position_type: PositionType::Absolute,
-                    top: Val::Px(50.0),
-                    right: Val::Px(20.0),
+                    top: Val::Px(100.0),
+                    right: Val::Px(40.0),
                     ..default()
                 },
             ),
@@ -136,7 +136,7 @@ fn setup_game_ui(
                     sliders::slider_panel(
                         controls.reactivity_target,
                         controls.turbine_target,
-                        font.clone(),
+                        font,
                         &asset_server
                     ),
                 ],
@@ -154,7 +154,7 @@ fn update_money_display(
     }
 
     for mut text in texts.iter_mut() {
-        **text = format!("A${:.0}", environment.money);
+        **text = format!("${:.0}", environment.money);
     }
 }
 
@@ -193,45 +193,46 @@ fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.7)),
         Transform::default(),
-        GlobalTransform::default(),
         PauseMenu,
         children![
             (
                 Text::new("PAUSED"),
                 TextFont {
                     font: font.clone(),
-                    font_size: 72.0,
+                    font_size: 144.0,
                     ..default()
                 },
                 TextColor(Color::WHITE),
                 Node {
-                    margin: UiRect::bottom(Val::Px(20.0)),
+                    margin: UiRect::bottom(Val::Px(40.0)),
                     ..default()
                 },
+                Transform::default(),
             ),
             (
                 Text::new("Press ESC to resume"),
                 TextFont {
                     font: font.clone(),
-                    font_size: 24.0,
+                    font_size: 48.0,
                     ..default()
                 },
                 TextColor(Color::srgb(0.8, 0.8, 0.8)),
                 Node {
-                    margin: UiRect::bottom(Val::Px(30.0)),
+                    margin: UiRect::bottom(Val::Px(60.0)),
                     ..default()
                 },
+                Transform::default(),
             ),
             (
                 Node {
-                    width: Val::Px(200.0),
-                    height: Val::Px(60.0),
-                    border: UiRect::all(Val::Px(5.0)),
+                    width: Val::Px(400.0),
+                    height: Val::Px(120.0),
+                    border: UiRect::all(Val::Px(10.0)),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
                     ..default()
                 },
-                BorderRadius::all(Val::Px(8.0)),
+                BorderRadius::all(Val::Px(16.0)),
                 BorderColor::all(Color::srgb(0.7, 0.7, 0.7)),
                 BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
                 Button,
@@ -245,8 +246,8 @@ fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 children![(
                     Text::new("Return to Menu"),
                     TextFont {
-                        font: font.clone(),
-                        font_size: 20.0,
+                        font,
+                        font_size: 40.0,
                         ..default()
                     },
                     TextColor(Color::WHITE),
@@ -290,12 +291,12 @@ fn setup_game_over_ui(
                 Text::new("GAME OVER"),
                 TextFont {
                     font: font.clone(),
-                    font_size: 72.0,
+                    font_size: 144.0,
                     ..default()
                 },
                 TextColor(Color::srgb(1.0, 0.2, 0.2)),
                 Node {
-                    margin: UiRect::bottom(Val::Px(20.0)),
+                    margin: UiRect::bottom(Val::Px(40.0)),
                     ..default()
                 },
             ),
@@ -303,26 +304,26 @@ fn setup_game_over_ui(
                 Text::new(reason_text),
                 TextFont {
                     font: font.clone(),
-                    font_size: 32.0,
+                    font_size: 64.0,
                     ..default()
                 },
                 TextColor(Color::WHITE),
                 GameOverReasonText,
                 Node {
-                    margin: UiRect::bottom(Val::Px(40.0)),
+                    margin: UiRect::bottom(Val::Px(80.0)),
                     ..default()
                 },
             ),
             (
                 Node {
-                    width: Val::Px(200.0),
-                    height: Val::Px(60.0),
-                    border: UiRect::all(Val::Px(5.0)),
+                    width: Val::Px(400.0),
+                    height: Val::Px(120.0),
+                    border: UiRect::all(Val::Px(10.0)),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
                     ..default()
                 },
-                BorderRadius::all(Val::Px(8.0)),
+                BorderRadius::all(Val::Px(16.0)),
                 BorderColor::all(Color::srgb(0.7, 0.7, 0.7)),
                 BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
                 Button,
@@ -336,8 +337,8 @@ fn setup_game_over_ui(
                 children![(
                     Text::new("Return to Menu"),
                     TextFont {
-                        font: font.clone(),
-                        font_size: 20.0,
+                        font,
+                        font_size: 40.0,
                         ..default()
                     },
                     TextColor(Color::WHITE),

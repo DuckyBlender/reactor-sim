@@ -78,8 +78,8 @@ fn setup_3d_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         Transform::from_rotation(Quat::from_euler(
             EulerRot::YXZ,
-            -FRAC_PI_2,      // Rotate -90° around Y (from +X direction)
-            -FRAC_PI_3,      // Rotate -60° around X (angled downward)
+            -FRAC_PI_2, // Rotate -90° around Y (from +X direction)
+            -FRAC_PI_3, // Rotate -60° around X (angled downward)
             0.0,
         )),
         CascadeShadowConfigBuilder {
