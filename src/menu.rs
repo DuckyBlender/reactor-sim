@@ -123,7 +123,7 @@ fn setup_main_menu(mut commands: Commands) {
                         margin: UiRect::all(Val::Px(10.0)),
                         ..default()
                     },
-                    BackgroundColor(Color::srgb(0.2, 0.2, 0.5)),
+                    BackgroundColor(Color::srgb(0.2, 0.4, 0.8)),
                     TutorialButton,
                 ))
                 .with_children(|parent| {
@@ -289,11 +289,12 @@ fn button_system(
             &mut BackgroundColor,
             Option<&PlayButton>,
             Option<&QuitButton>,
+            Option<&TutorialButton>,
         ),
         (Changed<Interaction>, With<Button>),
     >,
 ) {
-    for (interaction, mut color, play_btn, quit_btn) in &mut interaction_query {
+    for (interaction, mut color, play_btn, quit_btn, tutorial_btn) in &mut interaction_query {
         let (normal_color, hover_color, pressed_color) = if play_btn.is_some() {
             (
                 Color::srgb(0.25, 0.75, 0.25),
@@ -305,6 +306,12 @@ fn button_system(
                 Color::srgb(0.75, 0.25, 0.25),
                 Color::srgb(0.85, 0.45, 0.45),
                 Color::srgb(0.65, 0.35, 0.35),
+            )
+        } else if tutorial_btn.is_some() {
+            (
+                Color::srgb(0.2, 0.4, 0.8),
+                Color::srgb(0.4, 0.6, 0.9),
+                Color::srgb(0.3, 0.5, 0.7),
             )
         } else {
             (
