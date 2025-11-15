@@ -151,7 +151,7 @@ pub fn update_uranek_dialogue(
                 "Uranek: To nie jest konkurs na najgorętszy reaktor! Schłódź to!",
                 "Uranek: Moja pensja nie obejmuje pracy w saunie! Obniż moc!",
                 "Uranek: Jeśli to się roztopi, będę musiał pisać raport... NIE CHCĘ!",
-                "Uranek: Reaktor robi się bardziej gorący niż moja była! ZATRZYMAJ!",
+                "Uranek: Reaktor robi się bardzo ciepły! To nie jest normalne!",
                 "Uranek: To nie jest grill! Nie smażymy tu kiełbasek!",
             ];
             message = Some(messages[rand::rng().random_range(0..messages.len())]);
