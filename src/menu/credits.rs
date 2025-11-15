@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::GameState;
+use bevy::prelude::*;
 
 #[derive(Component)]
 struct BackButton;
@@ -9,11 +9,10 @@ pub struct CreditsMenuPlugin;
 impl Plugin for CreditsMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Credits), setup_credits)
-        .add_systems(
-            Update,
-            (handle_back_button)
-                .run_if(in_state(GameState::Credits)),
-        );
+            .add_systems(
+                Update,
+                (handle_back_button).run_if(in_state(GameState::Credits)),
+            );
     }
 }
 
@@ -97,4 +96,3 @@ Ignacy Sztykiel - Developer, Sound & Visual Designer
                 });
         });
 }
-

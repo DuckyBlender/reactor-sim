@@ -96,8 +96,8 @@ pub struct ControlSettings {
 pub enum GameOverReason {
     #[default]
     None,
-    ReactorExplosion,  // Pressure exceeded limit
-    ReactorMeltdown,   // Temperature exceeded limit
+    ReactorExplosion, // Pressure exceeded limit
+    ReactorMeltdown,  // Temperature exceeded limit
 }
 
 impl Default for ControlSettings {
@@ -136,7 +136,7 @@ fn simulate_reactor(
 ) {
     let delta = time.delta_secs();
     let reactivity = (controls.reactivity_applied / 100.0).clamp(0.0, 1.2);
-    
+
     // Exponential temperature growth: higher reactivity causes exponential increase
     // Temperature can now go beyond the explosion limit (no artificial cap)
     let exp_factor = (reactivity * 2.5).exp();
@@ -158,12 +158,7 @@ fn simulate_reactor(
     let rate_multiplier = 1.0 + (temp_normalized * 2.0).exp() * 0.5;
     let change_rate = (base_rate + cooling_effect) * rate_multiplier;
 
-    reactor.temperature = smooth_towards(
-        reactor.temperature,
-        effective_target,
-        change_rate,
-        delta,
-    );
+    reactor.temperature = smooth_towards(reactor.temperature, effective_target, change_rate, delta);
 
     // Pressure increases exponentially with reactivity
     // Reduced coupling with temperature so pressure doesn't limit temperature growth
@@ -173,7 +168,7 @@ fn simulate_reactor(
     // Small temperature contribution (reduced from 0.05 to 0.01 to reduce coupling)
     let temp_pressure_contribution = (reactor.temperature - 800.0).max(0.0) * 0.01;
     let pressure_target = pressure_base + pressure_exp_boost + temp_pressure_contribution;
-    
+
     // Pressure change rate increases with reactivity and current pressure
     let pressure_normalized = (reactor.pressure / 100.0).max(0.0);
     let pressure_rate = 1.2 + reactivity * 1.8 + pressure_normalized * 0.4;
@@ -247,7 +242,7 @@ fn simulate_turbine(
     // Turbine strength reduced to 10% of original
     let base_power = power_efficiency * 100.0;
     let flow_multiplier = if flow_rate > 0.01 { 1.0 } else { 0.5 }; // Reduced multiplier when no flow
-    
+
     // Generator requires minimum 100°C to produce power
     if turbine.temperature < 100.0 {
         environment.power_generated = 0.0;

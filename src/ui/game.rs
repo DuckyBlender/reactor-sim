@@ -1,0 +1,498 @@
+use bevy::{
+    input_focus::tab_navigation::TabGroup,
+    picking::hover::Hovered,
+    prelude::*,
+    ui::widget::Button,
+    ui_widgets::{Activate, observe},
+};
+
+use crate::{
+    GameState,
+    simulation::{ControlSettings, EnvironmentState, GameOverReason},
+    ui::{indicators, sliders, uranek::*},
+};
+
+#[derive(Component)]
+pub struct UpgradeButton;
+#[derive(Component)]
+struct GameOverReasonText;
+
+#[derive(Component)]
+struct GameOverUI;
+
+#[derive(Component)]
+struct MoneyText;
+
+#[derive(Component)]
+struct PauseMenu;
+
+#[derive(Component)]
+struct ReturnToMenuButton;
+
+#[derive(Resource, Default)]
+pub struct PauseState {
+    pub previous_state: Option<GameState>,
+}
+
+pub struct ReactorUiPlugin;
+
+impl Plugin for ReactorUiPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<UranekState>()
+            .init_resource::<PauseState>()
+            .add_systems(OnEnter(GameState::InGame), setup_game_ui)
+            .add_systems(
+                Update,
+                (
+                    sliders::sync_slider_values,
+                    sliders::update_slider_visuals.after(sliders::sync_slider_values),
+                    sliders::update_slider_value_text,
+                    sliders::update_applied_value_text,
+                ),
+            )
+            .add_systems(
+                Update,
+                (
+                    indicators::update_indicators,
+                    indicators::update_gauge_colors,
+                    indicators::handle_turbine_destroyed,
+                    indicators::rebuild_turbine_gauge_from_buyback,
+                    update_money_display,
+                    handle_pause_input,
+                    update_uranek_idle_animation,
+                    update_uranek_dialogue,
+                )
+                    .run_if(in_state(GameState::InGame)),
+            )
+            .add_systems(OnEnter(GameState::Paused), setup_pause_menu)
+            .add_systems(
+                Update,
+                handle_unpause_input.run_if(in_state(GameState::Paused)),
+            )
+            .add_systems(OnEnter(GameState::GameOver), setup_game_over_ui);
+    }
+}
+
+fn setup_game_ui(
+    mut commands: Commands,
+    controls: Res<ControlSettings>,
+    asset_server: Res<AssetServer>,
+    mut uranek_state: ResMut<UranekState>,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    time: Res<Time>,
+) {
+    *uranek_state = UranekState::default();
+    uranek_state.last_default_text_time = time.elapsed_secs();
+
+    let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
+
+    // Load spritesheet and create atlas layout
+    let spritesheet_texture = asset_server.load("sprites/spritesheet.png");
+
+    // Parse sprites.txt to define atlas layout
+    // Format: talk,0,0,928,1120; idle,929,0,928,1120; wave,0,1121,928,1120; hot,929,1121,928,1120
+    let mut layout = TextureAtlasLayout::new_empty(UVec2::new(1857, 2241));
+
+    let talk_idx = layout.add_texture(URect::new(0, 0, 928, 1120));
+    let idle_idx = layout.add_texture(URect::new(929, 0, 1857, 1120));
+    layout.add_texture(URect::new(0, 1121, 928, 2241)); // wave
+    let hot_idx = layout.add_texture(URect::new(929, 1121, 1857, 2241)); // hot
+
+    let texture_atlas_layout = texture_atlas_layouts.add(layout);
+
+    // Load and store Uranek assets once
+    let uranek_assets = UranekAssets {
+        spritesheet: spritesheet_texture.clone(),
+        atlas_layout: texture_atlas_layout.clone(),
+        idle_idx,
+        talk_idx,
+        hot_idx,
+    };
+
+    // Store sprite info for use before inserting resource
+    let uranek_sprite_texture = uranek_assets.spritesheet.clone();
+    let uranek_atlas_layout = uranek_assets.atlas_layout.clone();
+    let uranek_idle_idx = uranek_assets.idle_idx;
+
+    commands.insert_resource(uranek_assets);
+
+    // Main UI root
+    commands.spawn((
+        DespawnOnExit(GameState::InGame),
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            flex_direction: FlexDirection::Column,
+            padding: UiRect::all(Val::Px(40.0)),
+            row_gap: Val::Px(60.0),
+            ..default()
+        },
+        BackgroundColor(Color::NONE),
+        TabGroup::default(),
+        Transform::default(),
+        children![
+            // Title
+            (
+                TextFont {
+                    font: font.clone(),
+                    font_size: 56.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                Node {
+                    position_type: PositionType::Absolute,
+                    top: Val::Px(40.0),
+                    right: Val::Px(40.0),
+                    ..default()
+                },
+            ),
+            // Money display
+            (
+                Text::new("$0"),
+                TextFont {
+                    font: font.clone(),
+                    font_size: 48.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                MoneyText,
+                Node {
+                    position_type: PositionType::Absolute,
+                    top: Val::Px(100.0),
+                    right: Val::Px(40.0),
+                    ..default()
+                },
+            ),
+            // Uranek companion (top-left corner)
+            (
+                Node {
+                    position_type: PositionType::Absolute,
+                    top: Val::Px(20.0),
+                    left: Val::Px(20.0),
+                    flex_direction: FlexDirection::Row,
+                    column_gap: Val::Px(16.0),
+                    align_items: AlignItems::End,
+                    ..default()
+                },
+                children![
+                    // Uranek sprite
+                    (
+                        ImageNode {
+                            image: uranek_sprite_texture,
+                            texture_atlas: Some(TextureAtlas {
+                                layout: uranek_atlas_layout,
+                                index: uranek_idle_idx,
+                            }),
+                            ..default()
+                        },
+                        Node {
+                            width: Val::Px(220.0),
+                            height: Val::Px(220.0),
+                            ..default()
+                        },
+                        Uranek,
+                        UranekIdle,
+                    ),
+                    // Speech bubble (initially visible with default text)
+                    (
+                        Node {
+                            width: Val::Px(420.0),
+                            min_height: Val::Px(80.0),
+                            padding: UiRect::all(Val::Px(16.0)),
+                            border: UiRect::all(Val::Px(2.0)),
+                            ..default()
+                        },
+                        BackgroundColor(Color::srgba(0.05, 0.05, 0.08, 0.85)),
+                        BorderRadius::all(Val::Px(12.0)),
+                        BorderColor::all(Color::srgb(0.6, 0.9, 1.0)),
+                        UranekBubble,
+                        children![(
+                            Text::new("Uranek: Pilnujmy, żeby ten reaktor trzymał się w ryzach."),
+                            TextFont {
+                                font: font.clone(),
+                                font_size: 22.0,
+                                ..default()
+                            },
+                            TextColor(Color::WHITE),
+                            UranekText,
+                        ),],
+                    ),
+                ],
+            ),
+            (
+                Button,
+                Node {
+                    width: Val::Percent(30.0),
+                    height: Val::Percent(30.0),
+                    max_width: Val::Px(300.0),
+                    max_height: Val::Px(150.0),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    left: Val::Percent(80.0),
+                    right: Val::Percent(1.0),
+                    top: Val::Percent(35.0),
+                    bottom: Val::Percent(50.0),
+                    margin: UiRect::all(Val::Px(10.0)),
+                    ..default()
+                },
+                BorderRadius::all(Val::Px(12.0)),
+                BorderColor::all(Color::srgba(0.83, 0.83, 0.83, 0.85)),
+                BackgroundColor(Color::srgba(0.83, 0.83, 0.83, 0.85)),
+                UpgradeButton,
+                children![(
+                    Text::new("Upgrade  67$"),
+                    TextFont {
+                        font: font.clone(),
+                        font_size: 48.0,
+                        ..default()
+                    },
+                    TextColor(Color::WHITE),
+                    Node {
+                        position_type: PositionType::Absolute,
+                        ..default()
+                    },
+                )],
+            ),
+            // Bottom section with gauges and sliders
+            (
+                Node {
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
+                    flex_direction: FlexDirection::Row,
+                    justify_content: JustifyContent::SpaceBetween,
+                    align_items: AlignItems::End,
+                    ..default()
+                },
+                Transform::default(),
+                children![
+                    // Left side - Gauges
+                    indicators::gauge_grid(font.clone()),
+                    // Right side - Sliders
+                    sliders::slider_panel(
+                        controls.reactivity_target,
+                        controls.turbine_target,
+                        font,
+                        &asset_server
+                    ),
+                ],
+            ),
+        ],
+    ));
+}
+
+fn update_money_display(
+    environment: Res<EnvironmentState>,
+    mut texts: Query<&mut Text, With<MoneyText>>,
+) {
+    if !environment.is_changed() {
+        return;
+    }
+
+    for mut text in texts.iter_mut() {
+        **text = format!("${:.0}", environment.money);
+    }
+}
+
+fn handle_pause_input(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut next_state: ResMut<NextState<GameState>>,
+    current_state: Res<State<GameState>>,
+    mut pause_state: ResMut<PauseState>,
+) {
+    if keyboard.just_pressed(KeyCode::Escape) {
+        pause_state.previous_state = Some(*current_state.get());
+        next_state.set(GameState::Paused);
+    }
+}
+
+fn handle_unpause_input(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut next_state: ResMut<NextState<GameState>>,
+    pause_state: Res<PauseState>,
+) {
+    if keyboard.just_pressed(KeyCode::Escape) {
+        let resume_state = pause_state.previous_state.unwrap_or(GameState::InGame);
+        next_state.set(resume_state);
+    }
+}
+
+fn setup_pause_menu(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut pause_state: ResMut<PauseState>,
+) {
+    // Store the previous state if not already stored (fallback to InGame)
+    if pause_state.previous_state.is_none() {
+        pause_state.previous_state = Some(GameState::InGame);
+    }
+
+    commands.spawn((Camera2d, DespawnOnExit(GameState::Paused)));
+
+    let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
+
+    commands.spawn((
+        DespawnOnExit(GameState::Paused),
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.7)),
+        Transform::default(),
+        PauseMenu,
+        children![
+            (
+                Text::new("PAUSED"),
+                TextFont {
+                    font: font.clone(),
+                    font_size: 144.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                Node {
+                    margin: UiRect::bottom(Val::Px(40.0)),
+                    ..default()
+                },
+                Transform::default(),
+            ),
+            (
+                Text::new("Press ESC to resume"),
+                TextFont {
+                    font: font.clone(),
+                    font_size: 48.0,
+                    ..default()
+                },
+                TextColor(Color::srgb(0.8, 0.8, 0.8)),
+                Node {
+                    margin: UiRect::bottom(Val::Px(60.0)),
+                    ..default()
+                },
+                Transform::default(),
+            ),
+            (
+                Node {
+                    width: Val::Px(400.0),
+                    height: Val::Px(120.0),
+                    border: UiRect::all(Val::Px(10.0)),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                BorderRadius::all(Val::Px(16.0)),
+                BorderColor::all(Color::srgb(0.7, 0.7, 0.7)),
+                BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
+                Button,
+                Hovered::default(),
+                ReturnToMenuButton,
+                observe(
+                    |_activate: On<Activate>, mut next_state: ResMut<NextState<GameState>>| {
+                        next_state.set(GameState::MainMenu);
+                    },
+                ),
+                children![(
+                    Text::new("Return to Menu"),
+                    TextFont {
+                        font,
+                        font_size: 40.0,
+                        ..default()
+                    },
+                    TextColor(Color::WHITE),
+                )],
+            ),
+        ],
+    ));
+}
+
+fn setup_game_over_ui(
+    mut commands: Commands,
+    game_over_reason: Res<GameOverReason>,
+    asset_server: Res<AssetServer>,
+) {
+    // Camera
+    commands.spawn((Camera2d, DespawnOnExit(GameState::GameOver)));
+
+    let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
+
+    let reason_text = match *game_over_reason {
+        GameOverReason::ReactorExplosion => "REACTOR EXPLOSION",
+        GameOverReason::ReactorMeltdown => "REACTOR MELTDOWN",
+        GameOverReason::None => "Unknown cause",
+    };
+
+    // Game Over screen
+    commands.spawn((
+        DespawnOnExit(GameState::GameOver),
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.85)),
+        GameOverUI,
+        children![
+            (
+                Text::new("GAME OVER"),
+                TextFont {
+                    font: font.clone(),
+                    font_size: 144.0,
+                    ..default()
+                },
+                TextColor(Color::srgb(1.0, 0.2, 0.2)),
+                Node {
+                    margin: UiRect::bottom(Val::Px(40.0)),
+                    ..default()
+                },
+            ),
+            (
+                Text::new(reason_text),
+                TextFont {
+                    font: font.clone(),
+                    font_size: 64.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                GameOverReasonText,
+                Node {
+                    margin: UiRect::bottom(Val::Px(80.0)),
+                    ..default()
+                },
+            ),
+            (
+                Node {
+                    width: Val::Px(400.0),
+                    height: Val::Px(120.0),
+                    border: UiRect::all(Val::Px(10.0)),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                BorderRadius::all(Val::Px(16.0)),
+                BorderColor::all(Color::srgb(0.7, 0.7, 0.7)),
+                BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
+                Button,
+                Hovered::default(),
+                ReturnToMenuButton,
+                observe(
+                    |_activate: On<Activate>, mut next_state: ResMut<NextState<GameState>>| {
+                        next_state.set(GameState::MainMenu);
+                    },
+                ),
+                children![(
+                    Text::new("Return to Menu"),
+                    TextFont {
+                        font,
+                        font_size: 40.0,
+                        ..default()
+                    },
+                    TextColor(Color::WHITE),
+                )],
+            ),
+        ],
+    ));
+}

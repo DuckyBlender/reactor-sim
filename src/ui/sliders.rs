@@ -411,4 +411,3 @@ pub fn update_applied_value_text(
         **text = format!("Internal: {:.1}%", controls.turbine_applied);
     }
 }
-

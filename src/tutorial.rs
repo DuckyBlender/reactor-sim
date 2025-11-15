@@ -1,28 +1,30 @@
 use crate::{
     GameState,
     simulation::{ControlSettings, EnvironmentState, ReactorState, TurbineState},
-    ui::{indicators::gauge_grid, PauseState},
+    ui::{PauseState, indicators::gauge_grid},
 };
 use bevy::prelude::*;
 use rand::Rng;
-
-
 
 pub struct TutorialPlugin;
 
 impl Plugin for TutorialPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Tutorial), (setup_tutorial_scene, play_tutorial_sound))
-            .add_systems(
-                Update,
-                (
-                    advance_tutorial_on_space,
-                    handle_tutorial_escape,
-                    update_tutorial_ui,
-                    update_highlight_box,
-                    update_uranek_animation,
-                ).run_if(in_state(GameState::Tutorial)),
-            );
+        app.add_systems(
+            OnEnter(GameState::Tutorial),
+            (setup_tutorial_scene, play_tutorial_sound),
+        )
+        .add_systems(
+            Update,
+            (
+                advance_tutorial_on_space,
+                handle_tutorial_escape,
+                update_tutorial_ui,
+                update_highlight_box,
+                update_uranek_animation,
+            )
+                .run_if(in_state(GameState::Tutorial)),
+        );
     }
 }
 
@@ -102,18 +104,18 @@ fn setup_tutorial_scene(
 
     // Load spritesheet and create atlas layout
     let spritesheet_texture = asset_server.load("sprites/spritesheet.png");
-    
+
     // Parse sprites.txt to define atlas layout
     // Format: talk,0,0,928,1120; idle,929,0,928,1120; wave,0,1121,928,1120; hot,929,1121,928,1120
     let mut layout = TextureAtlasLayout::new_empty(UVec2::new(1857, 2241));
-    
+
     let talk_idx = layout.add_texture(URect::new(0, 0, 928, 1120));
     let idle_idx = layout.add_texture(URect::new(929, 0, 1857, 1120));
     let wave_idx = layout.add_texture(URect::new(0, 1121, 928, 2241));
     let hot_idx = layout.add_texture(URect::new(929, 1121, 1857, 2241));
-    
+
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
-    
+
     let sprite_indices = UranekSpriteIndices {
         talk: talk_idx,
         idle: idle_idx,
@@ -389,7 +391,7 @@ fn setup_tutorial_scene(
                             is_talking: false,
                         },
                         sprite_indices,
-                    )); 
+                    ));
 
                     // Speech Bubble
                     right_panel
@@ -508,15 +510,9 @@ fn update_tutorial_ui(
         2 => {
             "Ten pierwszy okrągły wskaźnik to temperatura REAKTORA.\n\nTrzymaj ją raczej w zielono-żółtej strefie."
         }
-        3 => {
-            "Ten drugi wskaźnik to temperatura TURBINY.\n\nOna robi z gorącej wody pieniądze."
-        }
-        4 => {
-            " Za zimna - nie kręci. "
-        }
-        5 => {
-            "Za gorąca - kręci się ostatni raz."
-        }
+        3 => "Ten drugi wskaźnik to temperatura TURBINY.\n\nOna robi z gorącej wody pieniądze.",
+        4 => " Za zimna - nie kręci. ",
+        5 => "Za gorąca - kręci się ostatni raz.",
         6 => {
             "Suwak REAKTYWNOŚCI steruje, jak mocno reaktor się rozgrzewa.\n\nW grze będziesz nim delikatnie kręcić."
         }
@@ -529,17 +525,18 @@ fn update_tutorial_ui(
         _ => "Gotowy na prawdziwy reaktor?",
     };
 
-
-
     **text = new_text.to_string();
 }
-
 
 fn update_uranek_animation(
     tutorial_state: Res<TutorialState>,
     time: Res<Time>,
     mut uranek_query: Query<
-        (&mut ImageNode, &mut UranekAnimationState, &UranekSpriteIndices),
+        (
+            &mut ImageNode,
+            &mut UranekAnimationState,
+            &UranekSpriteIndices,
+        ),
         With<UranekSprite>,
     >,
 ) {
@@ -564,7 +561,7 @@ fn update_uranek_animation(
     if (1..=6).contains(&step) {
         anim.is_talking = true;
         anim.timer.tick(time.delta());
-        
+
         if anim.timer.just_finished() {
             // Toggle between talk and idle sprites
             atlas.index = if atlas.index == indices.talk {
@@ -580,7 +577,6 @@ fn update_uranek_animation(
     atlas.index = indices.idle;
     anim.is_talking = false;
 }
-
 
 fn play_tutorial_sound(
     mut commands: Commands,
@@ -618,7 +614,7 @@ fn update_highlight_box(
     for (mut bg, mut border, highlight) in highlight_q.iter_mut() {
         let active = match (step, &highlight.kind) {
             // Gauges: glow only while he explicitly talks about the reactor & turbine gauges
-            (2 | 3 | 4 | 5, HighlightKind::Gauge) => true,
+            (2..=5, HighlightKind::Gauge) => true,
             // Reactivity slider: when he explains the reactivity control
             (6, HighlightKind::Reactivity) => true,
             // Turbine slider: when he explains the turbine control
