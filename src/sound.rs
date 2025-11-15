@@ -21,15 +21,11 @@ impl Default for AudioSettings {
 }
 
 #[derive(Resource)]
+#[derive(Default)]
 struct HissingState {
     pub active: bool,
 }
 
-impl Default for HissingState {
-    fn default() -> Self {
-        Self { active: false }
-    }
-}
 
 #[derive(Component)]
 struct ExplosionSound;

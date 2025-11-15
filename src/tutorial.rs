@@ -44,15 +44,16 @@ struct UranekSprite;
 #[derive(Component, Default)]
 struct UranekAnimationState {
     timer: Timer,
-    current_idle: bool,
+    is_talking: bool,
 }
 
 #[derive(Component)]
-struct UraneKTextures {
-    greet: Handle<Image>,
-    idle_0: Handle<Image>,
-    idle_1: Handle<Image>,
-    talk: Handle<Image>,
+struct UranekSpriteIndices {
+    talk: usize,
+    idle: usize,
+    wave: usize,
+    #[allow(dead_code)]
+    hot: usize,
 }
 
 #[derive(Component)]
@@ -82,7 +83,11 @@ enum HighlightKind {
     Turbine,
 }
 
-fn setup_tutorial_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup_tutorial_scene(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+) {
     // Reset game state
     commands.insert_resource(ControlSettings::default());
     commands.insert_resource(ReactorState::default());
@@ -95,11 +100,26 @@ fn setup_tutorial_scene(mut commands: Commands, asset_server: Res<AssetServer>) 
 
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
 
-    // Preload UraneK textures
-    let uranek_greet: Handle<Image> = asset_server.load("sprites/greet.png");
-    let uranek_idle_0: Handle<Image> = asset_server.load("sprites/idle_0.png");
-    let uranek_idle_1: Handle<Image> = asset_server.load("sprites/idle_1.png");
-    let uranek_talk: Handle<Image> = asset_server.load("sprites/talk.png");
+    // Load spritesheet and create atlas layout
+    let spritesheet_texture = asset_server.load("sprites/spritesheet.png");
+    
+    // Parse sprites.txt to define atlas layout
+    // Format: talk,0,0,928,1120; idle,929,0,928,1120; wave,0,1121,928,1120; hot,929,1121,928,1120
+    let mut layout = TextureAtlasLayout::new_empty(UVec2::new(1857, 2241));
+    
+    let talk_idx = layout.add_texture(URect::new(0, 0, 928, 1120));
+    let idle_idx = layout.add_texture(URect::new(929, 0, 1857, 1120));
+    let wave_idx = layout.add_texture(URect::new(0, 1121, 928, 2241));
+    let hot_idx = layout.add_texture(URect::new(929, 1121, 1857, 2241));
+    
+    let texture_atlas_layout = texture_atlas_layouts.add(layout);
+    
+    let sprite_indices = UranekSpriteIndices {
+        talk: talk_idx,
+        idle: idle_idx,
+        wave: wave_idx,
+        hot: hot_idx,
+    };
 
     // Root container
     commands
@@ -348,23 +368,27 @@ fn setup_tutorial_scene(mut commands: Commands, asset_server: Res<AssetServer>) 
                     ..default()
                 })
                 .with_children(|right_panel| {
-                    // UraneK Sprite - start with greet pose
+                    // UraneK Sprite - start with wave pose
                     right_panel.spawn((
-                        ImageNode::new(uranek_greet.clone()),
+                        ImageNode {
+                            image: spritesheet_texture.clone(),
+                            texture_atlas: Some(TextureAtlas {
+                                layout: texture_atlas_layout.clone(),
+                                index: sprite_indices.wave,
+                            }),
+                            ..default()
+                        },
                         Node {
                             width: Val::Px(256.0),
                             height: Val::Px(256.0),
                             ..default()
                         },
                         UranekSprite,
-                        UranekAnimationState::default(),
-                        // Store handles as children via components on the same entity
-                        UraneKTextures {
-                            greet: uranek_greet.clone(),
-                            idle_0: uranek_idle_0.clone(),
-                            idle_1: uranek_idle_1.clone(),
-                            talk: uranek_talk.clone(),
+                        UranekAnimationState {
+                            timer: Timer::from_seconds(0.2, TimerMode::Repeating),
+                            is_talking: false,
                         },
+                        sprite_indices,
                     ));
 
                     // Speech Bubble
@@ -433,7 +457,7 @@ fn advance_tutorial_on_space(
     }
 
     // play single-shot talking audio for this step
-    let random_num = rand::thread_rng().gen_range(1..=10);
+    let random_num = rand::rng().random_range(1..=10);
     let sound_path = format!("sound/talking/talking_{:03}.mp3", random_num);
     let handle: Handle<AudioSource> = asset_server.load(sound_path);
     commands.spawn((
@@ -507,43 +531,46 @@ fn update_uranek_animation(
     tutorial_state: Res<TutorialState>,
     time: Res<Time>,
     mut uranek_query: Query<
-        (&mut ImageNode, &mut UranekAnimationState, &UraneKTextures),
+        (&mut ImageNode, &mut UranekAnimationState, &UranekSpriteIndices),
         With<UranekSprite>,
     >,
 ) {
-    let Ok((mut image_node, mut anim, textures)) = uranek_query.single_mut() else {
+    let Ok((mut image_node, mut anim, indices)) = uranek_query.single_mut() else {
+        return;
+    };
+
+    let Some(atlas) = &mut image_node.texture_atlas else {
         return;
     };
 
     let step = tutorial_state.step_index;
 
-    // Step 0: greet pose
+    // Step 0: wave pose (greeting)
     if step == 0 {
-        image_node.image = textures.greet.clone();
-        anim.timer = Timer::from_seconds(8.0, TimerMode::Repeating);
-        anim.current_idle = false;
+        atlas.index = indices.wave;
+        anim.is_talking = false;
         return;
     }
 
-    // Steps 1..=6: talking pose
+    // Steps 1..=6: talking - alternate between idle and talk at 5 Hz
     if (1..=6).contains(&step) {
-        image_node.image = textures.talk.clone();
-        anim.timer = Timer::from_seconds(8.0, TimerMode::Repeating);
-        anim.current_idle = false;
+        anim.is_talking = true;
+        anim.timer.tick(time.delta());
+        
+        if anim.timer.just_finished() {
+            // Toggle between talk and idle sprites
+            atlas.index = if atlas.index == indices.talk {
+                indices.idle
+            } else {
+                indices.talk
+            };
+        }
         return;
     }
 
-    // After tutorial text (idle loop): alternate idle_0 and idle_1 every 8 seconds
-    anim.timer.tick(time.delta());
-    if anim.timer.is_finished() {
-        anim.current_idle = !anim.current_idle;
-    }
-
-    image_node.image = if anim.current_idle {
-        textures.idle_1.clone()
-    } else {
-        textures.idle_0.clone()
-    };
+    // After tutorial: just show idle
+    atlas.index = indices.idle;
+    anim.is_talking = false;
 }
 
 
@@ -558,7 +585,7 @@ fn play_tutorial_sound(
     }
 
     // Play speaking sound
-    let random_num = rand::thread_rng().gen_range(1..=10);
+    let random_num = rand::rng().random_range(1..=10);
     let sound_path = format!("sound/talking/talking_{:03}.mp3", random_num);
     let handle: Handle<AudioSource> = asset_server.load(sound_path);
     commands.spawn((
