@@ -42,6 +42,7 @@ impl Plugin for ReactorUiPlugin {
                 indicators::handle_turbine_destroyed,
                 indicators::rebuild_turbine_gauge_from_buyback,
                 update_money_display,
+                button_system,
                 uranek::update_uranek_idle_animation,
                 uranek::update_uranek_dialogue,
             )
@@ -246,9 +247,9 @@ fn setup_game_ui(
                 },
                 Transform::default(),
                 children![
-                    // Left side - Gauges
+                    // Lef9 side - Gauges
                     indicators::gauge_grid(font.clone()),
-                    // Right side - Sliders
+                    // Rig9t side - Sliders
                     sliders::slider_panel(
                         controls.reactivity_target,
                         controls.turbine_target,
@@ -274,3 +275,36 @@ fn update_money_display(
     }
 }
 
+#[allow(clippy::type_complexity)]
+fn button_system(
+    mut interaction_query: Query<
+        (
+            &Interaction,
+            &mut BackgroundColor,
+            Option<&UpgradeButton>,
+        ),
+        (Changed<Interaction>, With<Button>),
+    >,
+) {
+    for (interaction, mut color, upgrade_btn) in &mut interaction_query {
+        let (normal_color, hover_color, pressed_color) = if upgrade_btn.is_some() {
+            (
+                Color::srgb(0.83, 0.83, 0.83),
+                Color::srgb(0.75, 0.75, 0.80),
+                Color::srgb(0.74, 0.74, 0.83),
+            )
+        } else {
+            (
+                Color::srgb(0.83, 0.83, 0.83),
+                Color::srgb(0.83, 0.83, 0.83),
+                Color::srgb(0.83, 0.83, 0.83),
+            )
+        };
+
+        match *interaction {
+            Interaction::Pressed => *color = pressed_color.into(),
+            Interaction::Hovered => *color = hover_color.into(),
+            Interaction::None => *color = normal_color.into(),
+        }
+    }
+}
