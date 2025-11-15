@@ -65,7 +65,9 @@ impl Default for UranekState {
 struct UranekAssets {
     idle_0: Handle<Image>,
     idle_1: Handle<Image>,
-    talking_sound: Handle<AudioSource>,
+    talking_sound: Handle<AudioSource>
+}
+
 #[derive(Resource, Default)]
 pub struct PauseState {
     pub previous_state: Option<GameState>,
@@ -75,8 +77,8 @@ pub struct ReactorUiPlugin;
 
 impl Plugin for ReactorUiPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(UranekState::default())
-        app.init_resource::<PauseState>()
+        app.init_resource::<UranekState>()
+        .init_resource::<PauseState>()
             .add_systems(OnEnter(GameState::InGame), setup_game_ui)
             .add_systems(
                 Update,
@@ -509,6 +511,7 @@ fn update_uranek_idle_animation(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn update_uranek_dialogue(
     time: Res<Time>,
     reactor: Res<ReactorState>,
