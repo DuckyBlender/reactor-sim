@@ -2,6 +2,7 @@ use crate::{
     GameState,
     simulation::{ControlSettings, EnvironmentState, ReactorState, TurbineState},
     ui::{indicators::gauge_grid, PauseState},
+    FONT_REGULAR,
 };
 use bevy::prelude::*;
 use rand::Rng;
@@ -98,7 +99,7 @@ fn setup_tutorial_scene(
     // Camera
     commands.spawn((Camera2d, TutorialCamera, DespawnOnExit(GameState::Tutorial)));
 
-    let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
+    let font = asset_server.load(FONT_REGULAR);
 
     // Load spritesheet and create atlas layout
     let spritesheet_texture = asset_server.load("sprites/spritesheet.png");

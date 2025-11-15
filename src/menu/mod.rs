@@ -1,6 +1,6 @@
 mod credits;
 mod settings;
-mod main_menu;
+pub mod main_menu;
 
 use bevy::prelude::*;
 

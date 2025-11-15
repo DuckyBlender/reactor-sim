@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{GameState, simulation::GameOverReason};
+use crate::{GameState, simulation::GameOverReason, FONT_REGULAR};
 
 #[derive(Component)]
 struct GameOverReasonText;
@@ -28,12 +28,12 @@ fn setup_game_over_ui(
     // Camera
     commands.spawn((Camera2d, DespawnOnExit(GameState::GameOver)));
 
-    let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
+    let font = asset_server.load(FONT_REGULAR);
 
     let reason_text = match *game_over_reason {
-        GameOverReason::ReactorExplosion => "REACTOR EXPLOSION",
-        GameOverReason::ReactorMeltdown => "REACTOR MELTDOWN",
-        GameOverReason::None => "Unknown cause",
+        GameOverReason::ReactorExplosion => "EKSPLOZJA REAKTORA",
+        GameOverReason::ReactorMeltdown => "ROZPAD REAKTORA",
+        GameOverReason::None => "Nieznana przyczyna",
     };
 
     // Game Over screen
@@ -51,7 +51,7 @@ fn setup_game_over_ui(
         GameOverUI,
         children![
             (
-                Text::new("GAME OVER"),
+                Text::new("KONIEC GRY"),
                 TextFont {
                     font: font.clone(),
                     font_size: 144.0,
@@ -92,7 +92,7 @@ fn setup_game_over_ui(
                 Button,
                 ReturnToMenuButton,
                 children![(
-                    Text::new("Return to Menu"),
+                    Text::new("Powrót do menu"),
                     TextFont {
                         font,
                         font_size: 40.0,

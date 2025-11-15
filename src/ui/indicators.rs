@@ -4,8 +4,11 @@ use bevy::{
     ui_widgets::{Activate, Button, observe},
 };
 
-use crate::simulation::{
-    EnvironmentState, REACTOR_TEMP_LIMIT, ReactorState, TURBINE_TEMP_LIMIT, TurbineState,
+use crate::{
+    simulation::{
+        EnvironmentState, REACTOR_TEMP_LIMIT, ReactorState, TURBINE_TEMP_LIMIT, TurbineState,
+    },
+    FONT_REGULAR,
 };
 
 // Use larger base sizes for high DPI displays
@@ -344,7 +347,7 @@ pub fn handle_turbine_destroyed(
         return;
     }
 
-    let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
+    let font = asset_server.load(FONT_REGULAR);
 
     for container_entity in turbine_container.iter() {
         // Find the gauge border child
@@ -410,7 +413,7 @@ pub fn rebuild_turbine_gauge_from_buyback(
         return;
     }
 
-    let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
+    let font = asset_server.load(FONT_REGULAR);
 
     // Check if buyback button exists
     for button_entity in buyback_buttons.iter() {

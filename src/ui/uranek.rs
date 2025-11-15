@@ -47,6 +47,10 @@ pub struct UranekAssets {
     pub hot_idx: usize,
 }
 
+pub fn uranek_prefix(msg: &str) -> String {
+    format!("Uranek: {}", msg)
+}
+
 pub fn update_uranek_idle_animation(
     time: Res<Time>,
     reactor: Res<ReactorState>,
@@ -130,7 +134,7 @@ pub fn update_uranek_dialogue(
 
     // 3) Determine if Uranek has something new to say
     const COMMENT_COOLDOWN: f32 = 6.0;
-    let mut message: Option<&'static str> = None;
+    let mut message: Option<String> = None;
 
     let reactor_ratio = reactor.temperature / REACTOR_TEMP_LIMIT;
     let turbine_ratio = turbine.temperature / TURBINE_TEMP_LIMIT;
@@ -143,116 +147,116 @@ pub fn update_uranek_dialogue(
         if reactor_ratio >= 0.95 {
             // Black zone (95-100%) - critical meltdown imminent
             let messages = [
-                "Uranek: REAKTOR ZARAZ SIĘ ROZTOPI! Obniż reaktywność NATYCHMIAST!",
-                "Uranek: To koniec! Reaktor się topi! Wszystkie pręty TERAZ!",
-                "Uranek: MELTDOWN! MELTDOWN! Obniż reaktywność do zera!",
-                "Uranek: KRYTYCZNE! Reaktor przekracza limity! ZATRZYMAJ GO!",
-                "Uranek: Widzę, że lubisz żyć niebezpiecznie... ZA BARDZO!",
-                "Uranek: To nie jest konkurs na najgorętszy reaktor! Schłódź to!",
-                "Uranek: Moja pensja nie obejmuje pracy w saunie! Obniż moc!",
-                "Uranek: Jeśli to się roztopi, będę musiał pisać raport... NIE CHCĘ!",
-                "Uranek: Reaktor robi się bardziej gorący niż moja była! ZATRZYMAJ!",
-                "Uranek: To nie jest grill! Nie smażymy tu kiełbasek!",
+                "REAKTOR ZARAZ SIĘ ROZTOPI! Obniż reaktywność NATYCHMIAST!",
+                "To koniec! Reaktor się topi! Wszystkie pręty TERAZ!",
+                "MELTDOWN! MELTDOWN! Obniż reaktywność do zera!",
+                "KRYTYCZNE! Reaktor przekracza limity! ZATRZYMAJ GO!",
+                "Widzę, że lubisz żyć niebezpiecznie... ZA BARDZO!",
+                "To nie jest konkurs na najgorętszy reaktor! Schłódź to!",
+                "Moja pensja nie obejmuje pracy w saunie! Obniż moc!",
+                "Jeśli to się roztopi, będę musiał pisać raport... NIE CHCĘ!",
+                "Reaktor robi się bardzo ciepły! To nie jest normalne!",
+                "To nie jest grill! Nie smażymy tu kiełbasek!",
             ];
-            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
         } else if reactor_ratio >= 0.90 {
             // Deep red zone (90-95%)
             let messages = [
-                "Uranek: Reaktor jest w strefie krytycznej! Obniż reaktywność!",
-                "Uranek: Temperatura wchodzi w czarną strefę! Włóż pręty!",
-                "Uranek: To już prawie koniec! Reaktor się topi!",
-                "Uranek: Nie żartuj ze mną, to naprawdę niebezpieczne!",
-                "Uranek: Chyba nie chcesz kończyć w gazecie jako 'operator roku'?",
-                "Uranek: Reaktor robi się gorętszy niż moja kawa rano! To źle!",
-                "Uranek: To nie jest konkurs piękności! Schłódź tego potwora!",
-                "Uranek: Jeśli to wybuchnie, będę musiał tłumaczyć się szefowi...",
-                "Uranek: Reaktor świeci się jak choinka, ale to nie święta!",
-                "Uranek: Moja emerytura jest za 30 lat! Nie psuj mi planów!",
+                "Reaktor jest w strefie krytycznej! Obniż reaktywność!",
+                "Temperatura wchodzi w czarną strefę! Włóż pręty!",
+                "To już prawie koniec! Reaktor się topi!",
+                "Nie żartuj ze mną, to naprawdę niebezpieczne!",
+                "Chyba nie chcesz kończyć w gazecie jako 'operator roku'?",
+                "Reaktor robi się gorętszy niż moja kawa rano! To źle!",
+                "To nie jest konkurs piękności! Schłódź tego potwora!",
+                "Jeśli to wybuchnie, będę musiał tłumaczyć się szefowi...",
+                "Reaktor świeci się jak choinka, ale to nie święta!",
+                "Moja emerytura jest za 30 lat! Nie psuj mi planów!",
             ];
-            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
         } else if reactor_ratio >= 0.80 {
             // Red zone (80-90%)
             let messages = [
-                "Uranek: Reaktor jest głęboko w czerwonym. Włóż pręty, teraz.",
-                "Uranek: Temperatura wchodzi w niebezpieczną strefę! Obniż reaktywność!",
-                "Uranek: Reaktor się przegrzewa! Zmniejsz moc!",
-                "Uranek: Za gorąco! Nie jestem upalem dla palących się problemów!",
-                "Uranek: Czerwona strefa to nie dekoracja! Schłódź to!",
-                "Uranek: Pamiętasz szkolenie BHP? Teraz przydałoby się!",
-                "Uranek: Reaktor robi się gorętszy niż moje żarty! To naprawdę źle!",
-                "Uranek: To nie jest sauna! Chyba że chcesz się zaparować...",
-                "Uranek: Czerwony kolor nie oznacza 'idź szybciej'! Zwolnij!",
-                "Uranek: Reaktor świeci się jak pomidor w słońcu! Schłódź go!",
-                "Uranek: Moja cierpliwość też się kończy! Obniż reaktywność!",
-                "Uranek: To nie jest wyścig! Kto pierwszy do meltdownu nie wygrywa!",
+                "Reaktor jest głęboko w czerwonym. Włóż pręty, teraz.",
+                "Temperatura wchodzi w niebezpieczną strefę! Obniż reaktywność!",
+                "Reaktor się przegrzewa! Zmniejsz moc!",
+                "Za gorąco! Nie jestem upalem dla palących się problemów!",
+                "Czerwona strefa to nie dekoracja! Schłódź to!",
+                "Pamiętasz szkolenie BHP? Teraz przydałoby się!",
+                "Reaktor robi się gorętszy niż moje żarty! To naprawdę źle!",
+                "To nie jest sauna! Chyba że chcesz się zaparować...",
+                "Czerwony kolor nie oznacza 'idź szybciej'! Zwolnij!",
+                "Reaktor świeci się jak pomidor w słońcu! Schłódź go!",
+                "Moja cierpliwość też się kończy! Obniż reaktywność!",
+                "To nie jest wyścig! Kto pierwszy do meltdownu nie wygrywa!",
             ];
-            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
         } else if reactor_ratio >= 0.60 {
             // Yellow zone (60-80%)
             let messages = [
-                "Uranek: Reaktor wchodzi w żółtą strefę. Uważaj na temperaturę.",
-                "Uranek: Temperatura rośnie. Może warto trochę zmniejszyć reaktywność?",
-                "Uranek: Reaktor się rozgrzewa. Pilnuj wskaźników.",
-                "Uranek: Zaczyna robić się ciepło. Trzymaj rękę na pulsie.",
-                "Uranek: Żółta strefa - jeszcze bezpieczna, ale uważaj.",
+                "Reaktor wchodzi w żółtą strefę. Uważaj na temperaturę.",
+                "Temperatura rośnie. Może warto trochę zmniejszyć reaktywność?",
+                "Reaktor się rozgrzewa. Pilnuj wskaźników.",
+                "Zaczyna robić się ciepło. Trzymaj rękę na pulsie.",
+                "Żółta strefa - jeszcze bezpieczna, ale uważaj.",
             ];
-            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
         } else if reactor_pressure_ratio >= 0.90 {
             // High pressure warning
             let messages = [
-                "Uranek: Ciśnienie w reaktorze jest krytyczne! Obniż reaktywność!",
-                "Uranek: Ciśnienie wchodzi w niebezpieczną strefę! Uwaga!",
-                "Uranek: Za dużo ciśnienia! To nie garnek z bigos!",
-                "Uranek: Reaktor zaraz wybuchnie jak szampan! Ale bez radości!",
-                "Uranek: To nie jest konkurs na najwyższe ciśnienie! Obniż!",
-                "Uranek: Ciśnienie rośnie szybciej niż moje ciśnienie krwi!",
-                "Uranek: Reaktor puchnie jak balon! To nie jest dobry znak!",
+                "Ciśnienie w reaktorze jest krytyczne! Obniż reaktywność!",
+                "Ciśnienie wchodzi w niebezpieczną strefę! Uwaga!",
+                "Za dużo ciśnienia! To nie garnek z bigos!",
+                "Reaktor zaraz wybuchnie jak szampan! Ale bez radości!",
+                "To nie jest konkurs na najwyższe ciśnienie! Obniż!",
+                "Ciśnienie rośnie szybciej niż moje ciśnienie krwi!",
+                "Reaktor puchnie jak balon! To nie jest dobry znak!",
             ];
-            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
         } else if reactor_pressure_ratio >= 0.80 {
             // High pressure warning
             let messages = [
-                "Uranek: Ciśnienie w reaktorze rośnie. Uważaj.",
-                "Uranek: Manometr pokazuje za dużo. Kontroluj reaktywność.",
-                "Uranek: Ciśnienie rośnie... jak moje obawy o tę zmianę!",
-                "Uranek: Reaktor zaczyna się denerwować. Uspokój go!",
-                "Uranek: To nie jest konkurs na najwyższe ciśnienie!",
+                "Ciśnienie w reaktorze rośnie. Uważaj.",
+                "Manometr pokazuje za dużo. Kontroluj reaktywność.",
+                "Ciśnienie rośnie... jak moje obawy o tę zmianę!",
+                "Reaktor zaczyna się denerwować. Uspokój go!",
+                "To nie jest konkurs na najwyższe ciśnienie!",
             ];
-            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
         } else if turbine_ratio >= 0.95 {
             // Turbine critical
             let messages = [
-                "Uranek: Turbina wyje! Ochłodź ją, zanim wybuchnie!",
-                "Uranek: Turbina w strefie krytycznej! Zmniejsz przepływ!",
-                "Uranek: Turbina zaraz się rozleci! Mniej pary!",
+                "Turbina wyje! Ochłodź ją, zanim wybuchnie!",
+                "Turbina w strefie krytycznej! Zmniejsz przepływ!",
+                "Turbina zaraz się rozleci! Mniej pary!",
             ];
-            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
         } else if turbine_ratio >= 0.80 {
             // Turbine warning
             let messages = [
-                "Uranek: Turbina jest w strefie zagrożenia. Zmniejsz przepływ.",
-                "Uranek: Turbina się przegrzewa. Zmniejsz moc turbiny.",
-                "Uranek: Turbina nie lubi takich temperatur. Przygaś trochę.",
+                "Turbina jest w strefie zagrożenia. Zmniejsz przepływ.",
+                "Turbina się przegrzewa. Zmniejsz moc turbiny.",
+                "Turbina nie lubi takich temperatur. Przygaś trochę.",
             ];
-            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
         } else if environment.money > 2000.0 {
             // Positive feedback - high earnings
             let messages = [
-                "Uranek: Świetnie! Ta elektrownia drukuje pieniądze.",
-                "Uranek: Doskonała robota! Wszystko działa jak należy.",
-                "Uranek: Reaktor działa stabilnie. Trzymaj tak dalej!",
-                "Uranek: Jesteś dobrym operatorem. Może nawet dostaniesz podwyżkę!",
-                "Uranek: Widzę, że ten tutorial coś dał! Dobra robota.",
+                "Świetnie! Ta elektrownia drukuje pieniądze.",
+                "Doskonała robota! Wszystko działa jak należy.",
+                "Reaktor działa stabilnie. Trzymaj tak dalej!",
+                "Jesteś dobrym operatorem. Może nawet dostaniesz podwyżkę!",
+                "Widzę, że ten tutorial coś dał! Dobra robota.",
             ];
-            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
         } else if reactor_ratio < 0.40 && environment.money > 500.0 {
             // Low temperature, decent earnings
             let messages = [
-                "Uranek: Reaktor działa spokojnie. Wszystko w porządku.",
-                "Uranek: Stabilna praca, stabilna kasa. Tak to ma wyglądać.",
-                "Uranek: W końcu mogę sobie spokojnie wypić kawę.",
+                "Reaktor działa spokojnie. Wszystko w porządku.",
+                "Stabilna praca, stabilna kasa. Tak to ma wyglądać.",
+                "W końcu mogę sobie spokojnie wypić kawę.",
             ];
-            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+            message = Some(uranek_prefix(messages[rand::rng().random_range(0..messages.len())]));
         }
     }
 
@@ -272,7 +276,7 @@ pub fn update_uranek_dialogue(
     if let Some(msg) = message {
         // New line -> update text and set talk timeout
         for mut text in text_query.iter_mut() {
-            **text = msg.to_string();
+            **text = msg.clone();
         }
 
         // Show speech bubble while talking

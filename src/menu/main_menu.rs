@@ -1,4 +1,4 @@
-use crate::GameState;
+use crate::{GameState, FONT_REGULAR};
 use bevy::prelude::*;
 
 #[derive(Component)]
@@ -18,6 +18,9 @@ struct BackButton;
 
 #[derive(Component)]
 struct SettingsButton;
+
+#[derive(Component)]
+pub struct ReturnToMenuButton;
 
 pub struct MainMenuPlugin;
 
@@ -40,11 +43,18 @@ impl Plugin for MainMenuPlugin {
             Update,
             (button_system, handle_back_button)
                 .run_if(in_state(GameState::Credits).or(in_state(GameState::Settings))),
+        )
+         .add_systems(
+            Update,
+            button_system
+                .run_if(in_state(GameState::Paused)),
         );
     }
 }
 
-fn setup_main_menu(mut commands: Commands) {
+fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let font = asset_server.load(FONT_REGULAR);
+
     commands.spawn((Camera2d, DespawnOnExit(GameState::MainMenu)));
     commands
         .spawn((
@@ -63,6 +73,7 @@ fn setup_main_menu(mut commands: Commands) {
             parent.spawn((
                 Text::new("Symulator Reaktora z Urankiem"),
                 TextFont {
+                    font: font.clone(),
                     font_size: 64.0,
                     ..default()
                 },
@@ -88,8 +99,9 @@ fn setup_main_menu(mut commands: Commands) {
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        Text::new("Endless Mode"),
+                        Text::new("Tryb Nieskończony"),
                         TextFont {
+                            font: font.clone(),
                             font_size: 24.0,
                             ..default()
                         },
@@ -113,8 +125,9 @@ fn setup_main_menu(mut commands: Commands) {
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        Text::new("Tutorial"),
+                        Text::new("Samouczek"),
                         TextFont {
+                            font: font.clone(),
                             font_size: 24.0,
                             ..default()
                         },
@@ -138,8 +151,9 @@ fn setup_main_menu(mut commands: Commands) {
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        Text::new("Settings"),
+                        Text::new("Ustawienia"),
                         TextFont {
+                            font: font.clone(),
                             font_size: 24.0,
                             ..default()
                         },
@@ -163,8 +177,9 @@ fn setup_main_menu(mut commands: Commands) {
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        Text::new("Credits"),
+                        Text::new("Autorzy"),
                         TextFont {
+                            font: font.clone(),
                             font_size: 24.0,
                             ..default()
                         },
@@ -188,8 +203,9 @@ fn setup_main_menu(mut commands: Commands) {
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        Text::new("Quit"),
+                        Text::new("Wyjście"),
                         TextFont {
+                            font: font.clone(),
                             font_size: 24.0,
                             ..default()
                         },
@@ -232,6 +248,7 @@ fn button_system(
                 Color::srgb(0.3, 0.5, 0.7),
             )
         } else {
+            // Default colors for ReturnToMenuButton and other buttons
             (
                 Color::srgb(0.2, 0.2, 0.2),
                 Color::srgb(0.35, 0.35, 0.35),
