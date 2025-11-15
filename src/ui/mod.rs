@@ -4,10 +4,11 @@ use bevy::{
     prelude::*,
     ui_widgets::{Activate, Button, observe},
 };
+use rand::Rng;
 
 use crate::{
     GameState,
-    simulation::{ControlSettings, EnvironmentState, GameOverReason, ReactorState, TurbineState, REACTOR_TEMP_LIMIT, TURBINE_TEMP_LIMIT},
+    simulation::{ControlSettings, EnvironmentState, GameOverReason, ReactorState, TurbineState, REACTOR_TEMP_LIMIT, REACTOR_PRESSURE_LIMIT, TURBINE_TEMP_LIMIT},
 };
 
 pub mod indicators;
@@ -63,9 +64,11 @@ impl Default for UranekState {
 
 #[derive(Resource)]
 struct UranekAssets {
-    idle_0: Handle<Image>,
-    idle_1: Handle<Image>,
-    talking_sound: Handle<AudioSource>
+    spritesheet: Handle<Image>,
+    atlas_layout: Handle<TextureAtlasLayout>,
+    idle_idx: usize,
+    talk_idx: usize,
+    hot_idx: usize,
 }
 
 #[derive(Resource, Default)]
@@ -92,7 +95,6 @@ impl Plugin for ReactorUiPlugin {
             .add_systems(
                 Update,
                 (
-                    sliders::spin_turbine_icon,
                     indicators::update_indicators,
                     indicators::update_gauge_colors,
                     indicators::handle_turbine_destroyed,
@@ -118,20 +120,42 @@ fn setup_game_ui(
     controls: Res<ControlSettings>,
     asset_server: Res<AssetServer>,
     mut uranek_state: ResMut<UranekState>,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     time: Res<Time>,
 ) {
     *uranek_state = UranekState::default();
     uranek_state.last_default_text_time = time.elapsed_secs();
 
     let font = asset_server.load("fonts/LTSuperior-Regular.ttf");
-    let uranek_idle_0: Handle<Image> = asset_server.load("sprites/idle_0.png");
+    
+    // Load spritesheet and create atlas layout
+    let spritesheet_texture = asset_server.load("sprites/spritesheet.png");
+    
+    // Parse sprites.txt to define atlas layout
+    // Format: talk,0,0,928,1120; idle,929,0,928,1120; wave,0,1121,928,1120; hot,929,1121,928,1120
+    let mut layout = TextureAtlasLayout::new_empty(UVec2::new(1857, 2241));
+    
+    let talk_idx = layout.add_texture(URect::new(0, 0, 928, 1120));
+    let idle_idx = layout.add_texture(URect::new(929, 0, 1857, 1120));
+    layout.add_texture(URect::new(0, 1121, 928, 2241)); // wave
+    let hot_idx = layout.add_texture(URect::new(929, 1121, 1857, 2241)); // hot
+    
+    let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
     // Load and store Uranek assets once
     let uranek_assets = UranekAssets {
-        idle_0: uranek_idle_0.clone(),
-        idle_1: asset_server.load("sprites/idle_1.png"),
-        talking_sound: asset_server.load("sound/uranek_talking.mp3"),
+        spritesheet: spritesheet_texture.clone(),
+        atlas_layout: texture_atlas_layout.clone(),
+        idle_idx,
+        talk_idx,
+        hot_idx,
     };
+    
+    // Store sprite info for use before inserting resource
+    let uranek_sprite_texture = uranek_assets.spritesheet.clone();
+    let uranek_atlas_layout = uranek_assets.atlas_layout.clone();
+    let uranek_idle_idx = uranek_assets.idle_idx;
+    
     commands.insert_resource(uranek_assets);
 
     // Main UI root
@@ -195,6 +219,14 @@ fn setup_game_ui(
                 children![
                     // Uranek sprite
                     (
+                        ImageNode {
+                            image: uranek_sprite_texture,
+                            texture_atlas: Some(TextureAtlas {
+                                layout: uranek_atlas_layout,
+                                index: uranek_idle_idx,
+                            }),
+                            ..default()
+                        },
                         Node {
                             width: Val::Px(220.0),
                             height: Val::Px(220.0),
@@ -202,7 +234,6 @@ fn setup_game_ui(
                         },
                         Uranek,
                         UranekIdle,
-                        ImageNode::new(uranek_idle_0.clone()),
                     ),
                     // Speech bubble (initially visible with default text)
                     (
@@ -478,11 +509,19 @@ fn setup_game_over_ui(
 
 fn update_uranek_idle_animation(
     time: Res<Time>,
+    reactor: Res<ReactorState>,
     mut state: ResMut<UranekState>,
-    mut sprite_query: Query<&mut ImageNode>,
+    mut image_query: Query<&mut ImageNode, With<UranekIdle>>,
     assets: Res<UranekAssets>,
 ) {
     let now = time.elapsed_secs();
+    let reactor_ratio = reactor.temperature / REACTOR_TEMP_LIMIT;
+    let reactor_pressure_ratio = reactor.pressure / REACTOR_PRESSURE_LIMIT;
+
+    // Don't animate if reactor temperature OR pressure is in danger zone (hot sprite is shown)
+    if reactor_ratio >= 0.80 || reactor_pressure_ratio >= 0.80 {
+        return;
+    }
 
     // Blink parameters: every few seconds a short blink for 1 second
     let interval = 8.0; // interval between blinks (eyes open)
@@ -492,8 +531,10 @@ fn update_uranek_idle_animation(
         // Blink phase – after a second we return to the base frame
         if now - state.last_blink_time >= blink_duration {
             state.blink_frame = 0;
-            for mut image_node in sprite_query.iter_mut() {
-                image_node.image = assets.idle_0.clone();
+            for mut image_node in image_query.iter_mut() {
+                if let Some(atlas) = &mut image_node.texture_atlas {
+                    atlas.index = assets.idle_idx;
+                }
             }
             // New reference point: from now we count the full interval to the next blink
             state.last_blink_time = now;
@@ -505,8 +546,10 @@ fn update_uranek_idle_animation(
     if now - state.last_blink_time >= interval {
         state.last_blink_time = now;
         state.blink_frame = 1;
-        for mut image_node in sprite_query.iter_mut() {
-            image_node.image = assets.idle_1.clone();
+        for mut image_node in image_query.iter_mut() {
+            if let Some(atlas) = &mut image_node.texture_atlas {
+                atlas.index = assets.talk_idx;
+            }
         }
     }
 }
@@ -520,8 +563,10 @@ fn update_uranek_dialogue(
     mut state: ResMut<UranekState>,
     mut text_query: Query<&mut Text, With<UranekText>>,
     mut bubble_query: Query<(&mut Node, &mut BackgroundColor), With<UranekBubble>>,
-    mut commands: Commands,
+    mut sprite_query: Query<&mut ImageNode, With<Uranek>>,
     assets: Res<UranekAssets>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
 ) {
     let now = time.elapsed_secs();
 
@@ -548,18 +593,138 @@ fn update_uranek_dialogue(
 
     let reactor_ratio = reactor.temperature / REACTOR_TEMP_LIMIT;
     let turbine_ratio = turbine.temperature / TURBINE_TEMP_LIMIT;
+    let reactor_pressure_ratio = reactor.pressure / REACTOR_PRESSURE_LIMIT;
+
+    // Temperature zones: Green (0-60%), Yellow (60-80%), Red (80-95%), Black (95-100%)
 
     if now - state.last_comment_time >= COMMENT_COOLDOWN {
-        if reactor_ratio > 0.95 {
-            message = Some("Uranek: REAKTOR ZARAZ SIĘ ROZTOPI! Obniż reaktywność!");
-        } else if reactor_ratio > 0.8 {
-            message = Some("Uranek: Reaktor jest głęboko w czerwonym. Włóż pręty, teraz.");
-        } else if turbine_ratio > 0.95 {
-            message = Some("Uranek: Turbina wyje! Ochłodź ją, zanim wybuchnie!");
-        } else if turbine_ratio > 0.8 {
-            message = Some("Uranek: Turbina jest w strefie zagrożenia. Zmniejsz przepływ.");
-        } else if environment.money > 1000.0 {
-            message = Some("Uranek: Świetnie! Ta elektrownia drukuje pieniądze.");
+        // Reactor temperature warnings (priority order: hottest first)
+        if reactor_ratio >= 0.95 {
+            // Black zone (95-100%) - critical meltdown imminent
+            let messages = [
+                "Uranek: REAKTOR ZARAZ SIĘ ROZTOPI! Obniż reaktywność NATYCHMIAST!",
+                "Uranek: To koniec! Reaktor się topi! Wszystkie pręty TERAZ!",
+                "Uranek: MELTDOWN! MELTDOWN! Obniż reaktywność do zera!",
+                "Uranek: KRYTYCZNE! Reaktor przekracza limity! ZATRZYMAJ GO!",
+                "Uranek: Widzę, że lubisz żyć niebezpiecznie... ZA BARDZO!",
+                "Uranek: To nie jest konkurs na najgorętszy reaktor! Schłódź to!",
+                "Uranek: Moja pensja nie obejmuje pracy w saunie! Obniż moc!",
+                "Uranek: Jeśli to się roztopi, będę musiał pisać raport... NIE CHCĘ!",
+                "Uranek: Reaktor robi się bardziej gorący niż moja była! ZATRZYMAJ!",
+                "Uranek: To nie jest grill! Nie smażymy tu kiełbasek!",
+            ];
+            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+        } else if reactor_ratio >= 0.90 {
+            // Deep red zone (90-95%)
+            let messages = [
+                "Uranek: Reaktor jest w strefie krytycznej! Obniż reaktywność!",
+                "Uranek: Temperatura wchodzi w czarną strefę! Włóż pręty!",
+                "Uranek: To już prawie koniec! Reaktor się topi!",
+                "Uranek: Nie żartuj ze mną, to naprawdę niebezpieczne!",
+                "Uranek: Chyba nie chcesz kończyć w gazecie jako 'operator roku'?",
+                "Uranek: Reaktor robi się gorętszy niż moja kawa rano! To źle!",
+                "Uranek: To nie jest konkurs piękności! Schłódź tego potwora!",
+                "Uranek: Jeśli to wybuchnie, będę musiał tłumaczyć się szefowi...",
+                "Uranek: Reaktor świeci się jak choinka, ale to nie święta!",
+                "Uranek: Moja emerytura jest za 30 lat! Nie psuj mi planów!",
+            ];
+            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+        } else if reactor_ratio >= 0.80 {
+            // Red zone (80-90%)
+            let messages = [
+                "Uranek: Reaktor jest głęboko w czerwonym. Włóż pręty, teraz.",
+                "Uranek: Temperatura wchodzi w niebezpieczną strefę! Obniż reaktywność!",
+                "Uranek: Reaktor się przegrzewa! Zmniejsz moc!",
+                "Uranek: Za gorąco! Nie jestem upalem dla palących się problemów!",
+                "Uranek: Czerwona strefa to nie dekoracja! Schłódź to!",
+                "Uranek: Pamiętasz szkolenie BHP? Teraz przydałoby się!",
+                "Uranek: Reaktor robi się gorętszy niż moje żarty! To naprawdę źle!",
+                "Uranek: To nie jest sauna! Chyba że chcesz się zaparować...",
+                "Uranek: Czerwony kolor nie oznacza 'idź szybciej'! Zwolnij!",
+                "Uranek: Reaktor świeci się jak pomidor w słońcu! Schłódź go!",
+                "Uranek: Moja cierpliwość też się kończy! Obniż reaktywność!",
+                "Uranek: To nie jest wyścig! Kto pierwszy do meltdownu nie wygrywa!",
+            ];
+            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+        } else if reactor_ratio >= 0.60 {
+            // Yellow zone (60-80%)
+            let messages = [
+                "Uranek: Reaktor wchodzi w żółtą strefę. Uważaj na temperaturę.",
+                "Uranek: Temperatura rośnie. Może warto trochę zmniejszyć reaktywność?",
+                "Uranek: Reaktor się rozgrzewa. Pilnuj wskaźników.",
+                "Uranek: Zaczyna robić się ciepło. Trzymaj rękę na pulsie.",
+                "Uranek: Żółta strefa - jeszcze bezpieczna, ale uważaj.",
+            ];
+            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+        } else if reactor_pressure_ratio >= 0.90 {
+            // High pressure warning
+            let messages = [
+                "Uranek: Ciśnienie w reaktorze jest krytyczne! Obniż reaktywność!",
+                "Uranek: Ciśnienie wchodzi w niebezpieczną strefę! Uwaga!",
+                "Uranek: Za dużo ciśnienia! To nie garnek z bigos!",
+                "Uranek: Reaktor zaraz wybuchnie jak szampan! Ale bez radości!",
+                "Uranek: To nie jest konkurs na najwyższe ciśnienie! Obniż!",
+                "Uranek: Ciśnienie rośnie szybciej niż moje ciśnienie krwi!",
+                "Uranek: Reaktor puchnie jak balon! To nie jest dobry znak!",
+            ];
+            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+        } else if reactor_pressure_ratio >= 0.80 {
+            // High pressure warning
+            let messages = [
+                "Uranek: Ciśnienie w reaktorze rośnie. Uważaj.",
+                "Uranek: Manometr pokazuje za dużo. Kontroluj reaktywność.",
+                "Uranek: Ciśnienie rośnie... jak moje obawy o tę zmianę!",
+                "Uranek: Reaktor zaczyna się denerwować. Uspokój go!",
+                "Uranek: To nie jest konkurs na najwyższe ciśnienie!",
+            ];
+            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+        } else if turbine_ratio >= 0.95 {
+            // Turbine critical
+            let messages = [
+                "Uranek: Turbina wyje! Ochłodź ją, zanim wybuchnie!",
+                "Uranek: Turbina w strefie krytycznej! Zmniejsz przepływ!",
+                "Uranek: Turbina zaraz się rozleci! Mniej pary!",
+            ];
+            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+        } else if turbine_ratio >= 0.80 {
+            // Turbine warning
+            let messages = [
+                "Uranek: Turbina jest w strefie zagrożenia. Zmniejsz przepływ.",
+                "Uranek: Turbina się przegrzewa. Zmniejsz moc turbiny.",
+                "Uranek: Turbina nie lubi takich temperatur. Przygaś trochę.",
+            ];
+            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+        } else if environment.money > 2000.0 {
+            // Positive feedback - high earnings
+            let messages = [
+                "Uranek: Świetnie! Ta elektrownia drukuje pieniądze.",
+                "Uranek: Doskonała robota! Wszystko działa jak należy.",
+                "Uranek: Reaktor działa stabilnie. Trzymaj tak dalej!",
+                "Uranek: Jesteś dobrym operatorem. Może nawet dostaniesz podwyżkę!",
+                "Uranek: Widzę, że ten tutorial coś dał! Dobra robota.",
+            ];
+            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+        } else if reactor_ratio < 0.40 && environment.money > 500.0 {
+            // Low temperature, decent earnings
+            let messages = [
+                "Uranek: Reaktor działa spokojnie. Wszystko w porządku.",
+                "Uranek: Stabilna praca, stabilna kasa. Tak to ma wyglądać.",
+                "Uranek: W końcu mogę sobie spokojnie wypić kawę.",
+            ];
+            message = Some(messages[rand::rng().random_range(0..messages.len())]);
+        }
+    }
+
+    // Update sprite based on reactor temperature or pressure zones (red/black = hot sprite)
+    if let Ok(mut image_node) = sprite_query.single_mut()
+        && let Some(atlas) = &mut image_node.texture_atlas {
+        // Use hot sprite when reactor temperature OR pressure is in danger zone (>= 80%)
+        let is_danger_zone = reactor_ratio >= 0.80 || reactor_pressure_ratio >= 0.80;
+        if is_danger_zone {
+            atlas.index = assets.hot_idx;
+        } else if !is_danger_zone && atlas.index == assets.hot_idx {
+            // Switch back to idle sprite when both temperature and pressure are safe
+            atlas.index = assets.idle_idx;
         }
     }
 
@@ -575,8 +740,11 @@ fn update_uranek_dialogue(
             *bg = BackgroundColor(Color::srgba(0.05, 0.05, 0.08, 0.85));
         }
 
-        // Play talking sound
-        commands.spawn(AudioPlayer::new(assets.talking_sound.clone()));
+        // Play random talking sound
+        let random_num = rand::rng().random_range(1..=10);
+        let sound_path = format!("sound/talking/talking_{:03}.mp3", random_num);
+        let handle: Handle<AudioSource> = asset_server.load(sound_path);
+        commands.spawn(AudioPlayer::new(handle));
         state.last_comment_time = now;
 
         // Bubble stays visible for this many seconds after the line

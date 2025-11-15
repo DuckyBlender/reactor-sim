@@ -412,15 +412,3 @@ pub fn update_applied_value_text(
     }
 }
 
-pub fn spin_turbine_icon(
-    controls: Res<ControlSettings>,
-    mut turbine_icons: Query<&mut Transform, With<TurbineIcon>>,
-    time: Res<Time>,
-) {
-    let rotation_speed = (controls.turbine_applied / 100.0) * 3.0; // 0-3 radians per second
-    let delta = time.delta_secs();
-
-    for mut transform in turbine_icons.iter_mut() {
-        transform.rotate_z(rotation_speed * delta);
-    }
-}
