@@ -12,12 +12,14 @@ A small reactor control game built with [Bevy](https://bevyengine.org/). Your go
   - **Generated power & money**
 - If reactor or turbine temperature exceeds the safety limit, the game ends.
 
+The game includes a **main menu** with options to start a new game, view settings, credits, and tutorial.
+
 ### Uranek (operator assistant)
 
 In endless mode the operator assistant **Uranek** sits in the top‑left corner:
 
 - Blinks idly while you play.
-- Shows a speech bubble and plays talking sounds when:
+- Shows a speech bubble and plays random talking sounds when:
   - Reactor is close to overheating.
   - Turbine is close to overheating.
   - You are earning a lot of money.
@@ -55,14 +57,19 @@ Assets are located in the `assets/` directory and loaded at runtime (fonts, spri
 - `src/`
   - `main.rs` – Game entry point, Bevy app setup.
   - `simulation.rs` – Reactor, turbine, and environment simulation logic.
-  - `ui/` – 2D UI (gauges, sliders, Uranek, menus).
   - `sound.rs` – Background music and audio settings.
-  - `menu.rs`, `tutorial.rs`, `model.rs` – Menus, tutorial flow, and 3D reactor model.
+  - `tutorial.rs` – Tutorial flow.
+  - `model.rs` – 3D reactor model.
+  - `menu/` – Menu system (main menu, settings, credits).
+    - `main_menu.rs`, `settings.rs`, `credits.rs`, etc.
+  - `ui/` – 2D UI components (gauges, sliders, Uranek).
+    - `indicators.rs`, `sliders.rs`, `uranek.rs`, etc.
 - `assets/`
   - `fonts/` – UI fonts.
   - `sprites/` – 2D sprites (Uranek, UI art).
-  - `sound/` – Background music, SFX and Uranek talking clips.
+  - `sound/` – Background music, SFX, and Uranek talking clips (multiple in `talking/`).
   - `models/` – 3D reactor model.
+- `examples/` – Example code snippets.
 
 ## License
 
