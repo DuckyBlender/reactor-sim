@@ -17,6 +17,9 @@ pub mod uranek;
 #[derive(Component)]
 pub struct UpgradeButton;
 
+#[derive(Event)]
+pub struct UpgradeEvent;
+
 #[derive(Component)]
 struct MoneyText;
 pub struct ReactorUiPlugin;
@@ -48,6 +51,9 @@ impl Plugin for ReactorUiPlugin {
             )
                 .run_if(in_state(GameState::InGame)),
         )
+        .add_observer(|_event: On<UpgradeEvent>, environment: ResMut<EnvironmentState>| {
+            update_balance_after_upgrade(environment);
+        })
         .add_plugins(game_over::GameOverPlugin)
         .add_plugins(pause::PausePlugin);
     }
@@ -222,7 +228,7 @@ fn setup_game_ui(
                 BackgroundColor(Color::srgba(0.83, 0.83, 0.83, 0.85)),
                 UpgradeButton,
                 children![(
-                    Text::new("Upgrade  67$"),
+                    Text::new("Upgrade A$67"),
                     TextFont {
                         font: font.clone(),
                         font_size: 48.0,
@@ -285,6 +291,8 @@ fn button_system(
         ),
         (Changed<Interaction>, With<Button>),
     >,
+    mut commands: Commands,
+    environment: Res<EnvironmentState>
 ) {
     for (interaction, mut color, upgrade_btn) in &mut interaction_query {
         let (normal_color, hover_color, pressed_color) = if upgrade_btn.is_some() {
@@ -302,9 +310,21 @@ fn button_system(
         };
 
         match *interaction {
-            Interaction::Pressed => *color = pressed_color.into(),
+            Interaction::Pressed => {
+                *color = pressed_color.into();
+                if environment.money >= 67.0 {
+                    commands.trigger(UpgradeEvent);
+                }
+            },
             Interaction::Hovered => *color = hover_color.into(),
             Interaction::None => *color = normal_color.into(),
         }
     }
+}
+
+fn update_balance_after_upgrade(
+    mut environment: ResMut<EnvironmentState>
+) {
+    let money = environment.money;
+    let _ = environment.money.set(Box::new(money - 67.0));
 }

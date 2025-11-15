@@ -1,5 +1,6 @@
 use crate::GameState;
 use crate::simulation::{REACTOR_PRESSURE_LIMIT, ReactorState};
+use crate::ui::UpgradeEvent;
 use bevy::audio::Volume::Linear;
 use bevy::prelude::*;
 
@@ -46,7 +47,10 @@ impl Plugin for AudioPlugin {
                     hissing_activating_system,
                 ).run_if(in_state(GameState::InGame)),
             )
-            .add_systems(OnEnter(GameState::GameOver), explosion_audio_system);
+            .add_systems(OnEnter(GameState::GameOver), explosion_audio_system)
+            .add_observer(|_event: On<UpgradeEvent>, mut commands: Commands, asset_server: Res<AssetServer>| {
+                commands.spawn(create_upgrade_sound(asset_server));
+            });
     }
 }
 
@@ -63,6 +67,13 @@ fn create_background_music(asset_server: Res<AssetServer>) -> impl Bundle {
     )
 }
 
+fn create_upgrade_sound(asset_server: Res<AssetServer>) -> impl Bundle {
+    (
+        AudioPlayer::new(asset_server.load("sound/upgrade.mp3")),
+        PlaybackSettings::DESPAWN,
+        DespawnOnExit(GameState::InGame),
+    )
+}
 
 fn update_audio_volume(
     settings: Res<AudioSettings>,
