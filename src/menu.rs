@@ -123,36 +123,12 @@ fn setup_main_menu(mut commands: Commands) {
                         margin: UiRect::all(Val::Px(10.0)),
                         ..default()
                     },
-                    BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
+                    BackgroundColor(Color::srgb(0.2, 0.2, 0.5)),
                     TutorialButton,
                 ))
                 .with_children(|parent| {
                     parent.spawn((
                         Text::new("Tutorial"),
-                        TextFont {
-                            font_size: 24.0,
-                            ..default()
-                        },
-                        TextColor(Color::WHITE),
-                    ));
-                });
-            parent
-                .spawn((
-                    Button,
-                    Node {
-                        width: Val::Px(200.0),
-                        height: Val::Px(60.0),
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        margin: UiRect::all(Val::Px(10.0)),
-                        ..default()
-                    },
-                    BackgroundColor(Color::srgb(0.00, 0.00, 0.5)),
-                    CreditsButton,
-                ))
-                .with_children(|parent| {
-                    parent.spawn((
-                        Text::new("Credits"),
                         TextFont {
                             font_size: 24.0,
                             ..default()
@@ -178,6 +154,31 @@ fn setup_main_menu(mut commands: Commands) {
                 .with_children(|parent| {
                     parent.spawn((
                         Text::new("Settings"),
+                        TextFont {
+                            font_size: 24.0,
+                            ..default()
+                        },
+                        TextColor(Color::WHITE),
+                    ));
+                });
+
+            parent
+                .spawn((
+                    Button,
+                    Node {
+                        width: Val::Px(200.0),
+                        height: Val::Px(60.0),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        margin: UiRect::all(Val::Px(10.0)),
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgb(0.00, 0.00, 0.5)),
+                    CreditsButton,
+                ))
+                .with_children(|parent| {
+                    parent.spawn((
+                        Text::new("Credits"),
                         TextFont {
                             font_size: 24.0,
                             ..default()
@@ -425,7 +426,6 @@ pub fn create_volume_slider(initial_value: f32) -> impl Bundle {
         base_slider(initial_value, 1.0),
         observe(
             |value_change: On<ValueChange<f32>>, mut settings: ResMut<AudioSettings>| {
-                info!("Volume changed: {}", value_change.value);
                 settings.volume = value_change.value;
             },
         ),
