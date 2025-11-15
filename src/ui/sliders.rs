@@ -255,7 +255,7 @@ pub fn slider_panel(
                     (
                         Text::new(format!("{}%", turbine_value as i32)),
                         TextFont {
-                            font: font.clone(),
+                            font,
                             font_size: SLIDER_VALUE_FONT_SIZE,
                             ..default()
                         },

@@ -136,7 +136,7 @@ fn setup_game_ui(
                     sliders::slider_panel(
                         controls.reactivity_target,
                         controls.turbine_target,
-                        font.clone(),
+                        font,
                         &asset_server
                     ),
                 ],
@@ -245,7 +245,7 @@ fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 children![(
                     Text::new("Return to Menu"),
                     TextFont {
-                        font: font.clone(),
+                        font,
                         font_size: 40.0,
                         ..default()
                     },
@@ -336,7 +336,7 @@ fn setup_game_over_ui(
                 children![(
                     Text::new("Return to Menu"),
                     TextFont {
-                        font: font.clone(),
+                        font,
                         font_size: 40.0,
                         ..default()
                     },

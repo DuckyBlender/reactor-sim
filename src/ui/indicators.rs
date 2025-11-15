@@ -47,7 +47,7 @@ pub struct BuyBackButton;
 #[derive(Component)]
 pub struct TurbineGaugeContainer;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GaugeType {
     ReactorTemp,
     ReactorPressure,
@@ -89,7 +89,7 @@ pub fn gauge_grid(font: Handle<Font>) -> impl Bundle {
                 "0 MW",
                 PowerIndicator,
                 GaugeType::Power,
-                font.clone()
+                font
             ),
         ],
     )
@@ -152,7 +152,7 @@ fn turbine_gauge(font: Handle<Font>) -> impl Bundle {
                     (
                         Text::new("100%"),
                         TextFont {
-                            font: font.clone(),
+                            font,
                             font_size: GAUGE_DURABILITY_FONT_SIZE,
                             ..default()
                         },
@@ -212,7 +212,7 @@ fn gauge(
                 children![(
                     Text::new(initial_value),
                     TextFont {
-                        font: font.clone(),
+                        font,
                         font_size: GAUGE_VALUE_FONT_SIZE,
                         ..default()
                     },
