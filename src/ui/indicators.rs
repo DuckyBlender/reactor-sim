@@ -8,14 +8,15 @@ use crate::simulation::{
     EnvironmentState, REACTOR_TEMP_LIMIT, ReactorState, TURBINE_TEMP_LIMIT, TurbineState,
 };
 
-const GAUGE_SIZE: f32 = 75.0;
-const GAUGE_BORDER: f32 = 6.0;
-const GAUGE_TITLE_FONT_SIZE: f32 = 10.0;
-const GAUGE_VALUE_FONT_SIZE: f32 = 14.0;
-const GAUGE_DURABILITY_FONT_SIZE: f32 = 9.0;
-const GAUGE_CONTAINER_GAP: f32 = 6.0;
-const GAUGE_GRID_GAP: f32 = 18.0;
-const GAUGE_GRID_PADDING: f32 = 12.0;
+// Use larger base sizes for high DPI displays
+const GAUGE_SIZE: f32 = 120.0;
+const GAUGE_BORDER: f32 = 8.0;
+const GAUGE_TITLE_FONT_SIZE: f32 = 16.0;
+const GAUGE_VALUE_FONT_SIZE: f32 = 20.0;
+const GAUGE_DURABILITY_FONT_SIZE: f32 = 14.0;
+const GAUGE_CONTAINER_GAP: f32 = 8.0;
+const GAUGE_GRID_GAP: f32 = 24.0;
+const GAUGE_GRID_PADDING: f32 = 20.0;
 
 #[derive(Component)]
 pub struct ReactorTempIndicator;
@@ -66,7 +67,7 @@ pub fn gauge_grid(font: Handle<Font>) -> impl Bundle {
             ..default()
         },
         BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.5)),
-        BorderRadius::all(Val::Px(6.0)),
+        BorderRadius::all(Val::Px(12.0)),
         children![
             gauge(
                 "Temp. Reaktora",
@@ -114,7 +115,7 @@ fn turbine_gauge(font: Handle<Font>) -> impl Bundle {
                 },
                 TextColor(Color::srgb(0.7, 0.7, 0.7)),
                 Node {
-                    height: Val::Px(17.0), // Match title height
+                    height: Val::Px(24.0), // Match title height
                     ..default()
                 },
             ),
@@ -127,7 +128,7 @@ fn turbine_gauge(font: Handle<Font>) -> impl Bundle {
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
                     flex_direction: FlexDirection::Column,
-                    row_gap: Val::Px(2.0),
+                    row_gap: Val::Px(4.0),
                     ..default()
                 },
                 BorderRadius::MAX,
@@ -189,7 +190,7 @@ fn gauge(
                 },
                 TextColor(Color::srgb(0.7, 0.7, 0.7)),
                 Node {
-                    height: Val::Px(17.0), // Fixed title height for alignment
+                    height: Val::Px(24.0), // Fixed title height for alignment
                     ..default()
                 },
             ),

@@ -15,19 +15,19 @@ pub const SLIDER_TRACK: Color = Color::srgb(0.18, 0.2, 0.26);
 pub const SLIDER_THUMB: Color = Color::srgb(0.95, 0.55, 0.2);
 pub const SLIDER_THUMB_HOVERED: Color = Color::srgb(1.0, 0.65, 0.3);
 
-const SLIDER_HEIGHT: f32 = 12.0;
-const SLIDER_TRACK_HEIGHT: f32 = 5.0;
-const SLIDER_THUMB_SIZE: f32 = 10.0;
-const SLIDER_RIGHT_MARGIN: f32 = 10.0;
-const SLIDER_PANEL_ROW_GAP: f32 = 24.0;
-const SLIDER_PANEL_PADDING: f32 = 12.0;
-const SLIDER_ROW_GAP: f32 = 12.0;
-const SLIDER_CONTAINER_WIDTH: f32 = 180.0;
-const SLIDER_TITLE_FONT_SIZE: f32 = 10.0;
-const SLIDER_VALUE_FONT_SIZE: f32 = 12.0;
-const SLIDER_INTERNAL_FONT_SIZE: f32 = 7.0;
-const SLIDER_ICON_SIZE: f32 = 29.0;
-const SLIDER_VALUE_WIDTH: f32 = 36.0;
+const SLIDER_HEIGHT: f32 = 24.0;
+const SLIDER_TRACK_HEIGHT: f32 = 8.0;
+const SLIDER_THUMB_SIZE: f32 = 20.0;
+const SLIDER_RIGHT_MARGIN: f32 = 20.0;
+const SLIDER_PANEL_ROW_GAP: f32 = 32.0;
+const SLIDER_PANEL_PADDING: f32 = 24.0;
+const SLIDER_ROW_GAP: f32 = 24.0;
+const SLIDER_CONTAINER_WIDTH: f32 = 240.0;
+const SLIDER_TITLE_FONT_SIZE: f32 = 18.0;
+const SLIDER_VALUE_FONT_SIZE: f32 = 20.0;
+const SLIDER_INTERNAL_FONT_SIZE: f32 = 14.0;
+const SLIDER_ICON_SIZE: f32 = 48.0;
+const SLIDER_VALUE_WIDTH: f32 = 60.0;
 
 #[derive(Component)]
 pub struct ReactorSlider;
@@ -129,7 +129,7 @@ pub fn slider_panel(
             ..default()
         },
         BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.5)),
-        BorderRadius::all(Val::Px(6.0)),
+        BorderRadius::all(Val::Px(12.0)),
         Transform::default(),
         children![
             // Reactivity slider
@@ -154,7 +154,7 @@ pub fn slider_panel(
                     (
                         Node {
                             flex_direction: FlexDirection::Column,
-                            row_gap: Val::Px(5.0),
+                            row_gap: Val::Px(8.0),
                             width: Val::Px(SLIDER_CONTAINER_WIDTH),
                             ..default()
                         },
@@ -224,7 +224,7 @@ pub fn slider_panel(
                     (
                         Node {
                             flex_direction: FlexDirection::Column,
-                            row_gap: Val::Px(5.0),
+                            row_gap: Val::Px(8.0),
                             width: Val::Px(SLIDER_CONTAINER_WIDTH),
                             ..default()
                         },
